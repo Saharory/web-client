@@ -1,6 +1,7 @@
 import { AppState } from './models/app-state';
 import { Combatant } from './models/combatant';
 import { Role, Token } from './models/token';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface HitPointRange {
   current: number;
@@ -73,9 +74,15 @@ export function combatantWithHitPoints(
 export function combatantWithInitiative(
   combatant: Combatant,
   value: number,
+  initiativeId?: string,
 ): Partial<Combatant> {
-  const initiatives = (combatant.initiative || []).map((initiative, index) =>
-    index === 0 && Number.isFinite(value) ? { ...initiative, value: Math.trunc(value) } : { ...initiative }
-  );
+  const current = combatant.initiative || [];
+  const initiatives = current.length
+    ? current.map((initiative, index) =>
+        index === 0 && Number.isFinite(value) ? { ...initiative, value: Math.trunc(value) } : { ...initiative }
+      )
+    : Number.isFinite(value)
+      ? [{ id: initiativeId || uuidv4(), value: Math.trunc(value) }]
+      : [];
   return { id: combatant.id, initiative: initiatives };
 }

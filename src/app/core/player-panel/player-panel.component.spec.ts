@@ -89,4 +89,19 @@ describe('PlayerPanelComponent', () => {
 
     expect(dataService.send).not.toHaveBeenCalled();
   });
+
+  it('allows the player to set initiative before an initiative entry exists', () => {
+    const { component, dataService, state } = createComponent();
+    state.game.combatants[0].initiative = [];
+    component.initiativeValue = 15;
+
+    expect(component.canSetInitiative).toBeTrue();
+    component.saveInitiative();
+
+    const event = dataService.send.calls.mostRecent().args[0];
+    expect(event.name).toBe(WSEventName.updateCombatant);
+    expect(event.data.initiative.length).toBe(1);
+    expect(event.data.initiative[0].value).toBe(15);
+    expect(event.data.initiative[0].id).toBeTruthy();
+  });
 });

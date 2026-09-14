@@ -55,11 +55,7 @@ export class PlayerPanelComponent implements OnInit, DoCheck {
   }
 
   get canSetInitiative(): boolean {
-    return !this.state.game.started && this.hasInitiative;
-  }
-
-  get hasInitiative(): boolean {
-    return Boolean(this.combatant?.initiative?.length);
+    return !this.state.game.started && Boolean(this.combatant);
   }
 
   get hitPointInputsValid(): boolean {

@@ -87,4 +87,15 @@ describe('player tools', () => {
       { id: 'initiative-1', value: null },
     ]);
   });
+
+  it('creates the first initiative entry when Encounter+ has not created one yet', () => {
+    const combatant = Object.assign(new Combatant(), {
+      id: 'combatant-1',
+      initiative: [],
+    });
+    expect(combatantWithInitiative(combatant, 14.8, 'new-initiative')).toEqual({
+      id: 'combatant-1',
+      initiative: [{ id: 'new-initiative', value: 14 }],
+    });
+  });
 });
