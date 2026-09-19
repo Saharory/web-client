@@ -6,6 +6,7 @@ import { DataService } from 'src/app/shared/services/data.service';
 export enum Tool {
   move = "move",
   pointer = "pointer",
+  measure = "measure",
 }
 
 export enum Panel {

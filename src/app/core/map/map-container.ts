@@ -30,6 +30,7 @@ import { ProgramManager } from 'src/app/shared/utils';
 import { VisionLayer } from './layers/vision-layer';
 import { MeasurementsLayer } from './layers/measurements-layer';
 import { MeasurementView } from './views/measurement-view';
+import { Measurement, MeasurementType } from 'src/app/shared/models/measurement';
 import { PathsLayer } from './layers/paths-layer';
 import { View } from './views/view';
 
@@ -71,6 +72,9 @@ export class MapContainer extends Layer {
   dragTarget?: View
 
   activePointer: Pointer | null = null
+  activeMeasurement: Measurement | null = null
+  localMeasurementView: MeasurementView | null = null
+  measuring: boolean = false
   activeTool: Tool | null = null
 
   turned: TokenView | null = null
@@ -127,6 +131,7 @@ export class MapContainer extends Layer {
 
     this
       .on('pointerup', this.onPointerUp)
+      .on('pointerupoutside', this.onPointerUp)
       .on('pointerdown', this.onPointerDown)
       // .on('pointermove', this.onPointerMove)
   }
@@ -135,12 +140,18 @@ export class MapContainer extends Layer {
     console.debug(`changing active tool ${tool}`)
 
     this.activeTool = tool
-    this.eventMode = this.activeTool == Tool.pointer ? "static" : "passive"
+    this.eventMode = (this.activeTool == Tool.pointer || this.activeTool == Tool.measure) ? "static" : "passive"
     this.interactiveChildren = this.activeTool == Tool.move
+    this.cursor = this.activeTool == Tool.measure ? 'crosshair' : 'default'
+
+    if (this.activeTool != Tool.measure) {
+      this.clearLocalMeasurement()
+    }
   }
 
   update(state: AppState) {
     this.state = state
+    this.clearLocalMeasurement()
 
     console.debug("updating map")
     this.map = this.state.map
@@ -451,6 +462,14 @@ export class MapContainer extends Layer {
   }
 
   onPointerUp(event: any) {
+    if (this.measuring && this.activeMeasurement) {
+      event.stopPropagation();
+      this.updateLocalMeasurement(event)
+      this.measuring = false
+      this.off('pointermove', this.onPointerMove)
+      return
+    }
+
     this.dragging = false;
     this.off('pointermove', this.onPointerMove)
 
@@ -471,6 +490,12 @@ export class MapContainer extends Layer {
   }
 
   onPointerDown(event: any) {
+    if (this.activeTool == Tool.measure) {
+      event.stopPropagation()
+      this.startLocalMeasurement(event)
+      return
+    }
+
     // notice: shift key no longer works, as the container event mode is passive by default
     if (event.data.originalEvent.shiftKey || this.activeTool == Tool.pointer) {
       event.stopPropagation();
@@ -501,6 +526,12 @@ export class MapContainer extends Layer {
   }
 
   onPointerMove(event: any) {
+    if (this.measuring && this.activeMeasurement) {
+      event.stopPropagation()
+      this.updateLocalMeasurement(event)
+      return
+    }
+
     if (this.dragging && this.activePointer) {
       event.stopPropagation();
 
@@ -521,6 +552,62 @@ export class MapContainer extends Layer {
 
       // send event
       this.dataService.send({ name: WSEventName.pointerUpdated, data: this.activePointer });
+    }
+  }
+
+  private localPosition(event: any): PIXI.Point {
+    const point = typeof event.getLocalPosition === 'function'
+      ? event.getLocalPosition(this)
+      : event.data.getLocalPosition(this)
+
+    return new PIXI.Point(
+      Math.max(0, Math.min(this.w, point.x)),
+      Math.max(0, Math.min(this.h, point.y))
+    )
+  }
+
+  private startLocalMeasurement(event: any) {
+    this.clearLocalMeasurement()
+
+    const position = this.localPosition(event)
+    const measurement = new Measurement()
+    measurement.id = uuidv4()
+    measurement.type = MeasurementType.precise
+    measurement.color = localStorage.getItem('userColor') || '#2f8cff'
+    measurement.hidden = false
+    measurement.data = [position.x, position.y, position.x, position.y]
+
+    this.activeMeasurement = measurement
+    this.localMeasurementView = new MeasurementView(measurement, this.grid)
+    this.addChild(this.localMeasurementView)
+    this.localMeasurementView.draw()
+
+    this.measuring = true
+    this.off('pointermove', this.onPointerMove)
+    this.on('pointermove', this.onPointerMove)
+  }
+
+  private updateLocalMeasurement(event: any) {
+    if (!this.activeMeasurement || !this.localMeasurementView) return
+
+    const position = this.localPosition(event)
+    this.activeMeasurement.data[2] = position.x
+    this.activeMeasurement.data[3] = position.y
+    this.localMeasurementView.draw()
+  }
+
+  private clearLocalMeasurement() {
+    const wasMeasuring = this.measuring
+    this.measuring = false
+    this.activeMeasurement = null
+    if (wasMeasuring) {
+      this.off('pointermove', this.onPointerMove)
+    }
+
+    if (this.localMeasurementView) {
+      this.removeChild(this.localMeasurementView)
+      this.localMeasurementView.destroy({ children: true })
+      this.localMeasurementView = null
     }
   }
 

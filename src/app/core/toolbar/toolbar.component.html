@@ -38,7 +38,10 @@
     <label class="btn btn-client" for="btnradio1"> <i class="fa fa-arrows"></i></label>
 
     <input type="radio" value="pointer" class="btn-check" id="btnradio2" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
-    <label class="btn btn-client" for="btnradio2"> <i class="fa fa-magic"></i></label>
+    <label class="btn btn-client" for="btnradio2" title="Pointer"> <i class="fa fa-magic"></i></label>
+
+    <input type="radio" value="measure" class="btn-check" id="btnradio3" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
+    <label class="btn btn-client" for="btnradio3" title="Measure distance" aria-label="Measure distance"> <i class="fa fa-arrows-h"></i></label>
   </div>
 
   @if (state.map?.video) {
