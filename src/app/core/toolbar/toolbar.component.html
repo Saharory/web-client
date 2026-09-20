@@ -40,8 +40,45 @@
     <input type="radio" value="pointer" class="btn-check" id="btnradio2" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
     <label class="btn btn-client" for="btnradio2" title="Pointer"> <i class="fa fa-magic"></i></label>
 
-    <input type="radio" value="measure" class="btn-check" id="btnradio3" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
-    <label class="btn btn-client" for="btnradio3" title="Measure distance" aria-label="Measure distance"> <i class="fa fa-arrows-h"></i></label>
+    <div class="btn-group measurement-tool" ngbDropdown role="group">
+      <input type="radio" value="measure" class="btn-check" id="btnradio3" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
+      <label class="btn btn-client" for="btnradio3" title="Measure distance" aria-label="Measure distance"> <i class="fa fa-arrows-h"></i></label>
+      <button type="button" class="btn btn-client dropdown-toggle dropdown-toggle-split" ngbDropdownToggle aria-label="Measurement options"></button>
+
+      <div class="measurement-menu" ngbDropdownMenu>
+        <div class="measurement-menu-title">Measurement</div>
+        <button type="button" ngbDropdownItem class="measurement-mode" (click)="measurementTypeChanged(MeasurementType.precise)">
+          <span class="measurement-mode-icon" [class.selected]="measurementType == MeasurementType.precise">√x</span>
+          <span class="measurement-mode-copy">
+            <strong>Precise</strong>
+            <small>Geometric distance</small>
+          </span>
+          @if (measurementType == MeasurementType.precise) { <i class="fa fa-check measurement-check"></i> }
+        </button>
+        <button type="button" ngbDropdownItem class="measurement-mode" (click)="measurementTypeChanged(MeasurementType.grid)">
+          <span class="measurement-mode-icon" [class.selected]="measurementType == MeasurementType.grid">#</span>
+          <span class="measurement-mode-copy">
+            <strong>Grid movement</strong>
+            <small>Alternating diagonal cost</small>
+          </span>
+          @if (measurementType == MeasurementType.grid) { <i class="fa fa-check measurement-check"></i> }
+        </button>
+
+        <div class="dropdown-divider"></div>
+        <div class="measurement-save" (click)="$event.stopPropagation()">
+          <label for="saveMeasurements">
+            <strong>Save</strong>
+            <small>Keep multiple rulers on this map</small>
+          </label>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="saveMeasurements" [(ngModel)]="saveMeasurements" (ngModelChange)="saveMeasurementsChanged($event)">
+          </div>
+        </div>
+        @if (saveMeasurements) {
+          <div class="measurement-delete-help">Select the ruler tool, then tap × to delete a saved ruler.</div>
+        }
+      </div>
+    </div>
   </div>
 
   @if (state.map?.video) {

@@ -2,6 +2,7 @@ import { Component, OnInit, Input, ElementRef, Output, EventEmitter, ChangeDetec
 import { AppState } from 'src/app/shared/models/app-state';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from 'src/app/shared/services/data.service';
+import { MeasurementType } from 'src/app/shared/models/measurement';
 
 export enum Tool {
   move = "move",
@@ -18,6 +19,11 @@ export enum Panel {
 export interface PanelChange {
   panel: Panel;
   open: boolean;
+}
+
+export interface MeasurementToolOptions {
+  type: MeasurementType;
+  save: boolean;
 }
 
 const panelStorageKeys: Record<Panel.messages | Panel.player, string> = {
@@ -60,6 +66,9 @@ export class ToolbarComponent implements OnInit {
   @Output()
   public panel = new EventEmitter<PanelChange>();
 
+  @Output()
+  public measurementOptions = new EventEmitter<MeasurementToolOptions>();
+
   get showExit(): boolean {
     return this.state.device != null
   }
@@ -67,6 +76,9 @@ export class ToolbarComponent implements OnInit {
   constructor(private element: ElementRef, private modalService: NgbModal, private dataService: DataService) { }
 
   activeTool: Tool = Tool.move;
+  measurementType: MeasurementType = MeasurementType.precise;
+  saveMeasurements: boolean = false;
+  readonly MeasurementType = MeasurementType;
 
   messages: Boolean = false;
   player: Boolean = false;
@@ -76,6 +88,22 @@ export class ToolbarComponent implements OnInit {
 
   activeToolChanged(newTool) {
     this.tool.emit(newTool);
+  }
+
+  measurementTypeChanged(type: MeasurementType) {
+    this.measurementType = type;
+    localStorage.setItem('measurementType', type);
+    this.emitMeasurementOptions();
+  }
+
+  saveMeasurementsChanged(save: boolean) {
+    this.saveMeasurements = save;
+    localStorage.setItem('saveMeasurements', String(save));
+    this.emitMeasurementOptions();
+  }
+
+  private emitMeasurementOptions() {
+    this.measurementOptions.emit({ type: this.measurementType, save: this.saveMeasurements });
   }
 
   messagesChanged(newValue: boolean) {
@@ -117,6 +145,10 @@ export class ToolbarComponent implements OnInit {
   ngOnInit() {
     this.messages = savedPanelState(Panel.messages);
     this.player = savedPanelState(Panel.player);
+    this.measurementType = localStorage.getItem('measurementType') == MeasurementType.grid
+      ? MeasurementType.grid
+      : MeasurementType.precise;
+    this.saveMeasurements = localStorage.getItem('saveMeasurements') === 'true';
 
     this.dataService.videoMuted.subscribe(value => this.videoMuted);
     this.dataService.videoPaused.subscribe(value => this.videoPaused);

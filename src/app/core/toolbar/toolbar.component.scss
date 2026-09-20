@@ -14,3 +14,84 @@ $gameboard-margin: 100px;
     top: $gameboard-margin;
     left: $gameboard-margin;
 }
+
+.measurement-menu {
+    min-width: 18rem;
+    padding: 0.5rem;
+}
+
+.measurement-menu-title {
+    padding: 0.25rem 0.75rem 0.45rem;
+    color: var(--ui-text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.measurement-mode {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.65rem;
+}
+
+.measurement-mode-icon {
+    display: inline-flex;
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 2.35rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--ui-border-strong);
+    border-radius: 50%;
+    background: var(--ui-control);
+    color: var(--ui-text);
+    font-size: 1.05rem;
+    font-weight: 600;
+
+    &.selected {
+        border: 2px solid var(--ui-accent);
+    }
+}
+
+.measurement-mode-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+
+    small {
+        color: var(--ui-text-muted);
+    }
+}
+
+.measurement-check {
+    color: var(--ui-accent);
+}
+
+.measurement-save {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0.75rem;
+
+    label {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+    }
+
+    small {
+        color: var(--ui-text-muted);
+    }
+}
+
+.measurement-delete-help {
+    padding: 0.3rem 0.75rem 0.45rem;
+    color: var(--ui-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.3;
+}

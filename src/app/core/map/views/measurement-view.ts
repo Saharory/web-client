@@ -1,15 +1,17 @@
 import * as PIXI from 'pixi.js'
 import { View } from './view';
 import { Grid } from '../models/grid';
-import { Measurement } from 'src/app/shared/models/measurement';
+import { Measurement, MeasurementType } from 'src/app/shared/models/measurement';
 import { HexGrid } from '../models/hex-grid';
-import { formatMeasurementDistance, measurementDistance } from 'src/app/shared/measurement-tools';
+import { alternatingDiagonalMovement, formatMeasurementDistance, GridMovementSegment, measurementDistance } from 'src/app/shared/measurement-tools';
 
 export class MeasurementView extends View {
     shape: PIXI.Graphics
     handles: PIXI.Graphics
     cells: PIXI.Graphics
     distanceText: PIXI.Text
+    deleteControl: PIXI.Container
+    private deleteHandler: (() => void) | null = null
 
     constructor(public measurement: Measurement, private grid: Grid) {
         super()
@@ -29,11 +31,53 @@ export class MeasurementView extends View {
         })
         this.distanceText.anchor.set(0, 0.5)
         this.distanceText.resolution = 2
+        this.deleteControl = this.createDeleteControl()
 
         this.addChild(this.cells)
         this.addChild(this.shape)
         this.addChild(this.handles)
         this.addChild(this.distanceText)
+        this.addChild(this.deleteControl)
+    }
+
+    private createDeleteControl(): PIXI.Container {
+        const control = new PIXI.Container()
+        const radius = Math.max(12, this.grid.size / 5)
+        const background = new PIXI.Graphics()
+            .circle(0, 0, radius)
+            .fill({ color: 0x20252b, alpha: 0.92 })
+            .stroke({ color: 0xffffff, width: Math.max(1.5, this.grid.size / 35), alpha: 0.9 })
+        const label = new PIXI.Text({
+            text: '×',
+            style: {
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                fontSize: radius * 1.5,
+                fill: 0xffffff,
+                align: 'center'
+            }
+        })
+
+        label.anchor.set(0.5, 0.53)
+        control.addChild(background)
+        control.addChild(label)
+        control.eventMode = 'static'
+        control.cursor = 'pointer'
+        control.hitArea = new PIXI.Circle(0, 0, radius * 1.3)
+        control.visible = false
+        control.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+            event.stopPropagation()
+            this.deleteHandler?.()
+        })
+
+        return control
+    }
+
+    setDeleteHandler(handler: () => void) {
+        this.deleteHandler = handler
+    }
+
+    setDeleteControlVisible(visible: boolean) {
+        this.deleteControl.visible = visible && this.deleteHandler != null
     }
 
     getPolygon(points: Array<number>): Array<PIXI.Point> {
@@ -87,6 +131,26 @@ export class MeasurementView extends View {
         return result
     }
 
+    private gridMovementSteps(): number {
+        if (this.grid instanceof HexGrid) {
+            let steps = 0
+            for (let i = 2; i + 1 < this.measurement.data.length; i += 2) {
+                const start = this.grid.hex(new PIXI.Point(this.measurement.data[i - 2], this.measurement.data[i - 1])).round()
+                const end = this.grid.hex(new PIXI.Point(this.measurement.data[i], this.measurement.data[i + 1])).round()
+                steps += start.distance(end)
+            }
+            return steps
+        }
+
+        const segments: Array<GridMovementSegment> = []
+        for (let i = 2; i + 1 < this.measurement.data.length; i += 2) {
+            const start = this.grid.position(this.measurement.data[i - 2], this.measurement.data[i - 1])
+            const end = this.grid.position(this.measurement.data[i], this.measurement.data[i + 1])
+            segments.push({ horizontal: end.x - start.x, vertical: end.y - start.y })
+        }
+        return alternatingDiagonalMovement(segments)
+    }
+
     async draw() {
         this.clear()
 
@@ -113,12 +177,21 @@ export class MeasurementView extends View {
 
         if (this.measurement.data.length >= 4) {
             const end = this.measurement.data.length - 2
-            const distance = measurementDistance(this.measurement.data, this.grid.pixelRatio)
-            this.distanceText.text = formatMeasurementDistance(distance, this.grid.units)
+            if (this.measurement.type == MeasurementType.grid) {
+                const steps = this.gridMovementSteps()
+                this.distanceText.text = `${steps} (${formatMeasurementDistance(steps * this.grid.scale, this.grid.units)})`
+            } else {
+                const distance = measurementDistance(this.measurement.data, this.grid.pixelRatio)
+                this.distanceText.text = formatMeasurementDistance(distance, this.grid.units)
+            }
             this.distanceText.style.fontSize = Math.max(14, this.grid.size / 3)
             this.distanceText.position.set(
                 this.measurement.data[end] + Math.max(8, this.grid.size / 6),
                 this.measurement.data[end + 1] - Math.max(8, this.grid.size / 6)
+            )
+            this.deleteControl.position.set(
+                this.measurement.data[0],
+                this.measurement.data[1]
             )
         }
 

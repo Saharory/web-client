@@ -74,6 +74,10 @@ export class MapContainer extends Layer {
   activePointer: Pointer | null = null
   activeMeasurement: Measurement | null = null
   localMeasurementView: MeasurementView | null = null
+  savedMeasurementViews: Array<MeasurementView> = []
+  measurementType: MeasurementType = MeasurementType.precise
+  saveMeasurements: boolean = false
+  localMeasurementMapId: string | null = null
   measuring: boolean = false
   activeTool: Tool | null = null
 
@@ -141,17 +145,36 @@ export class MapContainer extends Layer {
 
     this.activeTool = tool
     this.eventMode = (this.activeTool == Tool.pointer || this.activeTool == Tool.measure) ? "static" : "passive"
-    this.interactiveChildren = this.activeTool == Tool.move
+    this.interactiveChildren = this.activeTool == Tool.move || this.activeTool == Tool.measure
     this.cursor = this.activeTool == Tool.measure ? 'crosshair' : 'default'
+    this.playersLayer.eventMode = this.activeTool == Tool.measure ? 'none' : 'passive'
+    this.monstersLayer.eventMode = this.activeTool == Tool.measure ? 'none' : 'passive'
+
+    for (const view of this.savedMeasurementViews) {
+      view.setDeleteControlVisible(this.activeTool == Tool.measure)
+    }
 
     if (this.activeTool != Tool.measure) {
-      this.clearLocalMeasurement()
+      this.clearTransientMeasurement()
+    }
+  }
+
+  setMeasurementOptions(type: MeasurementType, save: boolean) {
+    this.measurementType = type
+    this.saveMeasurements = save
+
+    if (this.activeMeasurement && this.localMeasurementView) {
+      this.activeMeasurement.type = type
+      this.localMeasurementView.draw()
     }
   }
 
   update(state: AppState) {
     this.state = state
-    this.clearLocalMeasurement()
+
+    if (this.localMeasurementMapId != null && this.localMeasurementMapId != this.state.map?.id) {
+      this.clearAllLocalMeasurements()
+    }
 
     console.debug("updating map")
     this.map = this.state.map
@@ -378,6 +401,15 @@ export class MapContainer extends Layer {
     this.effectsLayer.size = this.size
     this.effectsLayer.draw()
 
+    // Local rulers must stay above the refreshed map layers and mask so their
+    // delete controls remain visible and interactive.
+    for (const view of this.savedMeasurementViews) {
+      this.addChild(view)
+    }
+    if (this.localMeasurementView) {
+      this.addChild(this.localMeasurementView)
+    }
+
     this.hitArea = new PIXI.Rectangle(0, 0, this.w, this.h)
     return this;
   }
@@ -467,6 +499,7 @@ export class MapContainer extends Layer {
       this.updateLocalMeasurement(event)
       this.measuring = false
       this.off('pointermove', this.onPointerMove)
+      this.finishLocalMeasurement()
       return
     }
 
@@ -567,12 +600,12 @@ export class MapContainer extends Layer {
   }
 
   private startLocalMeasurement(event: any) {
-    this.clearLocalMeasurement()
+    this.clearTransientMeasurement()
 
     const position = this.localPosition(event)
     const measurement = new Measurement()
     measurement.id = uuidv4()
-    measurement.type = MeasurementType.precise
+    measurement.type = this.measurementType
     measurement.color = localStorage.getItem('userColor') || '#2f8cff'
     measurement.hidden = false
     measurement.data = [position.x, position.y, position.x, position.y]
@@ -581,6 +614,7 @@ export class MapContainer extends Layer {
     this.localMeasurementView = new MeasurementView(measurement, this.grid)
     this.addChild(this.localMeasurementView)
     this.localMeasurementView.draw()
+    this.localMeasurementMapId = this.map?.id || null
 
     this.measuring = true
     this.off('pointermove', this.onPointerMove)
@@ -596,7 +630,32 @@ export class MapContainer extends Layer {
     this.localMeasurementView.draw()
   }
 
-  private clearLocalMeasurement() {
+  private finishLocalMeasurement() {
+    this.activeMeasurement = null
+
+    if (!this.saveMeasurements || !this.localMeasurementView) return
+
+    const savedView = this.localMeasurementView
+    savedView.setDeleteHandler(() => this.deleteSavedMeasurement(savedView))
+    savedView.setDeleteControlVisible(this.activeTool == Tool.measure)
+    this.savedMeasurementViews.push(savedView)
+    this.localMeasurementView = null
+  }
+
+  private deleteSavedMeasurement(view: MeasurementView) {
+    const index = this.savedMeasurementViews.indexOf(view)
+    if (index < 0) return
+
+    this.savedMeasurementViews.splice(index, 1)
+    this.removeChild(view)
+    view.destroy({ children: true })
+
+    if (this.savedMeasurementViews.length == 0 && this.localMeasurementView == null) {
+      this.localMeasurementMapId = null
+    }
+  }
+
+  private clearTransientMeasurement() {
     const wasMeasuring = this.measuring
     this.measuring = false
     this.activeMeasurement = null
@@ -609,6 +668,18 @@ export class MapContainer extends Layer {
       this.localMeasurementView.destroy({ children: true })
       this.localMeasurementView = null
     }
+  }
+
+  private clearAllLocalMeasurements() {
+    this.clearTransientMeasurement()
+
+    for (const view of this.savedMeasurementViews) {
+      this.removeChild(view)
+      view.destroy({ children: true })
+    }
+
+    this.savedMeasurementViews = []
+    this.localMeasurementMapId = null
   }
 
   // onTokenMove(event: any) {

@@ -10,7 +10,7 @@ import { WSEventName, WSEvent } from './shared/models/wsevent';
 import { ControlState, TokenView } from './core/map/views/token-view';
 import { AreaEffect } from './shared/models/area-effect';
 import { Tile } from './shared/models/tile';
-import { ToolbarComponent, Tool, Panel, PanelChange, savedPanelState, savePanelState } from './core/toolbar/toolbar.component';
+import { ToolbarComponent, Tool, Panel, PanelChange, savedPanelState, savePanelState, MeasurementToolOptions } from './core/toolbar/toolbar.component';
 import { ToastListComponent } from './core/toast-list/toast-list.component';
 import { ToastService } from './shared/services/toast.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -239,7 +239,19 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   activeToolAction(tool: Tool) {
     if (this.mapComponent) {
+      if (this.toolbarComponent) {
+        this.mapComponent.mapContainer.setMeasurementOptions(
+          this.toolbarComponent.measurementType,
+          this.toolbarComponent.saveMeasurements
+        )
+      }
       this.mapComponent.mapContainer.setActiveTool(tool)
+    }
+  }
+
+  measurementToolOptionsChanged(options: MeasurementToolOptions) {
+    if (this.mapComponent?.mapContainer) {
+      this.mapComponent.mapContainer.setMeasurementOptions(options.type, options.save)
     }
   }
 
