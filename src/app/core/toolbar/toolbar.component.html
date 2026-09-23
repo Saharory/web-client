@@ -79,6 +79,40 @@
         }
       </div>
     </div>
+
+    <div class="btn-group area-template-tool" ngbDropdown role="group">
+      <input type="radio" value="template" class="btn-check" id="areaTemplateTool" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
+      <label class="btn btn-client" for="areaTemplateTool" title="Preview an area" aria-label="Preview an area"> <i class="fa fa-bullseye"></i></label>
+      <button type="button" class="btn btn-client dropdown-toggle dropdown-toggle-split" ngbDropdownToggle aria-label="Area template options"></button>
+
+      <div class="area-template-menu" ngbDropdownMenu>
+        <div class="measurement-menu-title">Area preview</div>
+        <div class="area-template-shapes" role="group" aria-label="Area shape">
+          <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.sphere" (click)="areaTemplateShapeChanged(AreaEffectShape.sphere)" title="Radius" aria-label="Radius">
+            <i class="fa fa-circle-thin"></i>
+          </button>
+          <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.cone" (click)="areaTemplateShapeChanged(AreaEffectShape.cone)" title="Cone" aria-label="Cone">
+            <span class="area-template-cone">◁</span>
+          </button>
+          <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.cube" (click)="areaTemplateShapeChanged(AreaEffectShape.cube)" title="Cube" aria-label="Cube">
+            <i class="fa fa-cube"></i>
+          </button>
+          <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.cylinder" (click)="areaTemplateShapeChanged(AreaEffectShape.cylinder)" title="Cylinder" aria-label="Cylinder">
+            <i class="fa fa-database"></i>
+          </button>
+          <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.line" (click)="areaTemplateShapeChanged(AreaEffectShape.line)" title="Line" aria-label="Line">
+            <i class="fa fa-long-arrow-right"></i>
+          </button>
+        </div>
+
+        <div class="dropdown-divider"></div>
+        <button type="button" ngbDropdownItem class="area-template-clear" (click)="clearAreaTemplatePreview()">
+          <i class="fa fa-times-circle-o"></i>
+          Clear preview
+        </button>
+        <div class="area-template-help">Drag from the template’s origin to set its size and direction.</div>
+      </div>
+    </div>
   </div>
 
   @if (state.map?.video) {

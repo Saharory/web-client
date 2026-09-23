@@ -10,7 +10,7 @@ import { WSEventName, WSEvent } from './shared/models/wsevent';
 import { ControlState, TokenView } from './core/map/views/token-view';
 import { AreaEffect } from './shared/models/area-effect';
 import { Tile } from './shared/models/tile';
-import { ToolbarComponent, Tool, Panel, PanelChange, savedPanelState, savePanelState, MeasurementToolOptions } from './core/toolbar/toolbar.component';
+import { ToolbarComponent, Tool, Panel, PanelChange, savedPanelState, savePanelState, MeasurementToolOptions, AreaTemplateToolOptions } from './core/toolbar/toolbar.component';
 import { ToastListComponent } from './core/toast-list/toast-list.component';
 import { ToastService } from './shared/services/toast.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -244,6 +244,9 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.toolbarComponent.measurementType,
           this.toolbarComponent.saveMeasurements
         )
+        this.mapComponent.mapContainer.setAreaTemplateOptions(
+          this.toolbarComponent.areaTemplateShape
+        )
       }
       this.mapComponent.mapContainer.setActiveTool(tool)
     }
@@ -253,6 +256,16 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (this.mapComponent?.mapContainer) {
       this.mapComponent.mapContainer.setMeasurementOptions(options.type, options.save)
     }
+  }
+
+  areaTemplateToolOptionsChanged(options: AreaTemplateToolOptions) {
+    if (this.mapComponent?.mapContainer) {
+      this.mapComponent.mapContainer.setAreaTemplateOptions(options.shape)
+    }
+  }
+
+  clearAreaTemplatePreview() {
+    this.mapComponent?.mapContainer?.clearLocalAreaTemplate()
   }
 
   activePanelAction(change: PanelChange) {

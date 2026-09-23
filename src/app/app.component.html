@@ -1,6 +1,6 @@
 <div id="app" class="h-100 d-flex flex-column {{state.device}}" appDisableRightClick>
   <app-map [state]="state" class="h-100"></app-map>
-  <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)"></app-toolbar>
+  <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)" (areaTemplateOptions)="areaTemplateToolOptionsChanged($event)" (clearAreaTemplate)="clearAreaTemplatePreview()"></app-toolbar>
 
   @if (showPlayerPanel) {
     <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showEntityAction($event)"></app-player-panel>

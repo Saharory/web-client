@@ -3,11 +3,13 @@ import { AppState } from 'src/app/shared/models/app-state';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from 'src/app/shared/services/data.service';
 import { MeasurementType } from 'src/app/shared/models/measurement';
+import { AreaEffectShape } from 'src/app/shared/models/area-effect';
 
 export enum Tool {
   move = "move",
   pointer = "pointer",
   measure = "measure",
+  template = "template",
 }
 
 export enum Panel {
@@ -24,6 +26,10 @@ export interface PanelChange {
 export interface MeasurementToolOptions {
   type: MeasurementType;
   save: boolean;
+}
+
+export interface AreaTemplateToolOptions {
+  shape: AreaEffectShape;
 }
 
 const panelStorageKeys: Record<Panel.messages | Panel.player, string> = {
@@ -69,6 +75,12 @@ export class ToolbarComponent implements OnInit {
   @Output()
   public measurementOptions = new EventEmitter<MeasurementToolOptions>();
 
+  @Output()
+  public areaTemplateOptions = new EventEmitter<AreaTemplateToolOptions>();
+
+  @Output()
+  public clearAreaTemplate = new EventEmitter<void>();
+
   get showExit(): boolean {
     return this.state.device != null
   }
@@ -79,6 +91,8 @@ export class ToolbarComponent implements OnInit {
   measurementType: MeasurementType = MeasurementType.precise;
   saveMeasurements: boolean = false;
   readonly MeasurementType = MeasurementType;
+  areaTemplateShape: AreaEffectShape = AreaEffectShape.sphere;
+  readonly AreaEffectShape = AreaEffectShape;
 
   messages: Boolean = false;
   player: Boolean = false;
@@ -104,6 +118,24 @@ export class ToolbarComponent implements OnInit {
 
   private emitMeasurementOptions() {
     this.measurementOptions.emit({ type: this.measurementType, save: this.saveMeasurements });
+  }
+
+  areaTemplateShapeChanged(shape: AreaEffectShape) {
+    this.areaTemplateShape = shape;
+    localStorage.setItem('areaTemplateShape', shape);
+    this.activateAreaTemplateTool();
+  }
+
+  clearAreaTemplatePreview() {
+    this.clearAreaTemplate.emit();
+  }
+
+  private activateAreaTemplateTool() {
+    this.areaTemplateOptions.emit({ shape: this.areaTemplateShape });
+    if (this.activeTool != Tool.template) {
+      this.activeTool = Tool.template;
+      this.tool.emit(Tool.template);
+    }
   }
 
   messagesChanged(newValue: boolean) {
@@ -149,7 +181,10 @@ export class ToolbarComponent implements OnInit {
       ? MeasurementType.grid
       : MeasurementType.precise;
     this.saveMeasurements = localStorage.getItem('saveMeasurements') === 'true';
-
+    const storedAreaTemplateShape = localStorage.getItem('areaTemplateShape') as AreaEffectShape;
+    if (Object.values(AreaEffectShape).includes(storedAreaTemplateShape)) {
+      this.areaTemplateShape = storedAreaTemplateShape;
+    }
     this.dataService.videoMuted.subscribe(value => this.videoMuted);
     this.dataService.videoPaused.subscribe(value => this.videoPaused);
   }
