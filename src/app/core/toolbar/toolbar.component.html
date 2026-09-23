@@ -40,12 +40,14 @@
     <input type="radio" value="pointer" class="btn-check" id="btnradio2" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
     <label class="btn btn-client" for="btnradio2" title="Pointer"> <i class="fa fa-magic"></i></label>
 
-    <div class="btn-group measurement-tool" ngbDropdown role="group">
+    <div class="btn-group configurable-tool measurement-tool" ngbDropdown role="group">
       <input type="radio" value="measure" class="btn-check" id="btnradio3" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
-      <label class="btn btn-client" for="btnradio3" title="Measure distance" aria-label="Measure distance"> <i class="fa fa-arrows-h"></i></label>
-      <button type="button" class="btn btn-client dropdown-toggle dropdown-toggle-split" ngbDropdownToggle aria-label="Measurement options"></button>
+      <label class="btn btn-client configurable-tool-main" for="btnradio3" title="Measure distance" aria-label="Measure distance"> <i class="fa fa-arrows-h"></i></label>
+      <button type="button" class="configurable-tool-toggle" ngbDropdownToggle aria-label="Measurement options" title="Measurement options">
+        <i class="fa fa-caret-down" aria-hidden="true"></i>
+      </button>
 
-      <div class="measurement-menu" ngbDropdownMenu>
+      <div class="tool-options-menu measurement-menu" ngbDropdownMenu>
         <div class="measurement-menu-title">Measurement</div>
         <button type="button" ngbDropdownItem class="measurement-mode" (click)="measurementTypeChanged(MeasurementType.precise)">
           <span class="measurement-mode-icon" [class.selected]="measurementType == MeasurementType.precise">√x</span>
@@ -80,12 +82,14 @@
       </div>
     </div>
 
-    <div class="btn-group area-template-tool" ngbDropdown role="group">
+    <div class="btn-group configurable-tool area-template-tool" ngbDropdown role="group">
       <input type="radio" value="template" class="btn-check" id="areaTemplateTool" autocomplete="off" [(ngModel)]="activeTool" (ngModelChange)="activeToolChanged($event)">
-      <label class="btn btn-client" for="areaTemplateTool" title="Preview an area" aria-label="Preview an area"> <i class="fa fa-bullseye"></i></label>
-      <button type="button" class="btn btn-client dropdown-toggle dropdown-toggle-split" ngbDropdownToggle aria-label="Area template options"></button>
+      <label class="btn btn-client configurable-tool-main" for="areaTemplateTool" title="Preview an area" aria-label="Preview an area"> <i class="fa fa-bullseye"></i></label>
+      <button type="button" class="configurable-tool-toggle" ngbDropdownToggle aria-label="Area template options" title="Area template options">
+        <i class="fa fa-caret-down" aria-hidden="true"></i>
+      </button>
 
-      <div class="area-template-menu" ngbDropdownMenu>
+      <div class="tool-options-menu area-template-menu" ngbDropdownMenu>
         <div class="measurement-menu-title">Area preview</div>
         <div class="area-template-shapes" role="group" aria-label="Area shape">
           <button type="button" class="area-template-shape" [class.selected]="areaTemplateShape == AreaEffectShape.sphere" (click)="areaTemplateShapeChanged(AreaEffectShape.sphere)" title="Radius" aria-label="Radius">
