@@ -183,15 +183,11 @@ export class MapContainer extends Layer {
   }
 
   setAreaTemplateOptions(shape: AreaEffectShape) {
+    const shapeChanged = this.areaTemplateShape != shape
     this.areaTemplateShape = shape
 
-    if (this.activeAreaTemplate && this.localAreaTemplateView) {
-      this.activeAreaTemplate.shape = shape
-      this.activeAreaTemplate.radius = shape == AreaEffectShape.sphere || shape == AreaEffectShape.cylinder
-        ? this.activeAreaTemplate.length
-        : 0
-      this.activeAreaTemplate.width = this.grid.size
-      this.localAreaTemplateView.draw()
+    if (shapeChanged && this.localAreaTemplateView) {
+      this.clearLocalAreaTemplate()
     }
   }
 

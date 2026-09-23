@@ -42,11 +42,11 @@ export class LocalAreaTemplateView extends AreaEffectView {
     this.affectedCells.clear();
     this.distanceText.text = '';
     this.affectedCells.visible = this.editing;
-    this.distanceText.visible = this.editing;
+    this.distanceText.visible = this.areaEffect.length > 0;
     if (this.editing) {
       this.drawAffectedCells();
-      this.drawDistance();
     }
+    if (this.distanceText.visible) this.drawDistance();
     this.addChildAt(this.affectedCells, 0);
     this.addChild(this.distanceText);
     return this;
