@@ -3,7 +3,7 @@
   <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)" (areaTemplateOptions)="areaTemplateToolOptionsChanged($event)" (clearAreaTemplate)="clearAreaTemplatePreview()"></app-toolbar>
 
   @if (showPlayerPanel) {
-    <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showEntityAction($event, 'Character')"></app-player-panel>
+    <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showEntityAction($event, 'Character')" (showEffect)="showEffectAction($event)"></app-player-panel>
   }
 
   @if (zoomControls) {

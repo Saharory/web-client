@@ -9,6 +9,71 @@ export interface HitPointRange {
   temporary: number;
 }
 
+export interface PlayerEffect {
+  id: string;
+  name: string;
+  value?: string;
+  detail?: string;
+  icon?: string;
+  color?: string;
+  reference?: string;
+  description?: string;
+}
+
+function textValue(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return undefined;
+}
+
+function effectColor(value: unknown): string | undefined {
+  return typeof value === 'string' && /^#[0-9a-f]{3,8}$/i.test(value.trim()) ? value.trim() : undefined;
+}
+
+export function playerEffects(combatant?: Combatant): PlayerEffect[] {
+  const source = combatant?.effects ?? combatant?.data?.effects;
+  const effects: unknown[] = Array.isArray(source)
+    ? source
+    : source && typeof source === 'object'
+      ? Object.values(source)
+      : [];
+
+  return effects.flatMap((effect, index) => {
+    if (typeof effect === 'string') {
+      const name = effect.trim();
+      return name ? [{ id: `effect-${index}-${name}`, name }] : [];
+    }
+    if (!effect || typeof effect !== 'object') return [];
+
+    const record = effect as Record<string, any>;
+    const data = record['data'] && typeof record['data'] === 'object' ? record['data'] : {};
+    const name = textValue(record['name'], record['label'], record['title'], data['name']);
+    if (!name) return [];
+
+    const stage = textValue(data['stage'], record['stage']);
+    const rawValue = textValue(record['value'], data['value']);
+    const value = stage && stage !== '0' ? stage : rawValue && rawValue !== '0' ? rawValue : undefined;
+    const damage = record['damage'] && typeof record['damage'] === 'object' ? record['damage'] : {};
+    const dataDamage = data['damage'] && typeof data['damage'] === 'object' ? data['damage'] : {};
+    const detail = textValue(record['formula'], data['formula'], damage['formula'], dataDamage['formula']);
+    const reference = textValue(record['reference'], data['reference']);
+    const description = textValue(record['descr'], record['description'], data['descr'], data['description']);
+
+    return [{
+      id: textValue(record['id'], record['slug'], reference) || `effect-${index}-${name}`,
+      name,
+      value: value && !name.endsWith(` ${value}`) ? value : undefined,
+      detail: detail !== value ? detail : undefined,
+      icon: textValue(record['icon'], record['image'], data['icon'], data['image']),
+      color: effectColor(record['color'] ?? data['color']),
+      reference,
+      description,
+    }];
+  });
+}
+
 export function assignedPlayerToken(state: AppState): Token | undefined {
   const storedTokenId = typeof localStorage === 'undefined' ? null : localStorage.getItem('userTokenId');
   const tokenId = state.userTokenId || storedTokenId;

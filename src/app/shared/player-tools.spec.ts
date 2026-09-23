@@ -7,6 +7,7 @@ import {
   assignedPlayerToken,
   combatantWithHitPoints,
   combatantWithInitiative,
+  playerEffects,
 } from './player-tools';
 
 describe('player tools', () => {
@@ -97,5 +98,45 @@ describe('player tools', () => {
       id: 'combatant-1',
       initiative: [{ id: 'new-initiative', value: 14 }],
     });
+  });
+
+  it('normalizes valued and descriptive effects without inventing missing data', () => {
+    const combatant = Object.assign(new Combatant(), {
+      id: 'combatant-1',
+      effects: [
+        {
+          id: 'frightened',
+          name: 'Frightened',
+          icon: 'icons/conditions.png',
+          color: '#5B5F97',
+          reference: '/condition/frightened-player-core',
+          data: { stage: 2 },
+        },
+        { name: 'Persistent Fire', data: { damage: { formula: '1d6' } }, descr: 'Ongoing fire damage.' },
+        null,
+      ],
+    });
+
+    expect(playerEffects(combatant)).toEqual([
+      jasmine.objectContaining({
+        id: 'frightened',
+        name: 'Frightened',
+        value: '2',
+        reference: '/condition/frightened-player-core',
+      }),
+      jasmine.objectContaining({
+        name: 'Persistent Fire',
+        detail: '1d6',
+        description: 'Ongoing fire damage.',
+      }),
+    ]);
+  });
+
+  it('accepts the alternate effect dictionary shape', () => {
+    const combatant = Object.assign(new Combatant(), {
+      id: 'combatant-1',
+      data: { effects: { hidden: { label: 'Invisible' } } },
+    });
+    expect(playerEffects(combatant).map(effect => effect.name)).toEqual(['Invisible']);
   });
 });

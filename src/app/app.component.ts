@@ -35,6 +35,7 @@ import { Message } from './shared/models/message';
 import { Game } from './shared/models/game';
 import { Screen } from './shared/models/screen';
 import { ActiveCombatant, Role } from './shared/models/combatant';
+import { PlayerEffect } from './shared/player-tools';
 
 interface WebAppInterface {
   showText(text: string): any;
@@ -302,6 +303,22 @@ export class AppComponent implements OnInit, AfterViewInit {
     }, reason => {
       console.debug(`Entity component dismissed ${reason}`)
     });
+  }
+
+  showEffectAction(effect: PlayerEffect) {
+    if (effect.reference) {
+      this.showEntityAction(effect.reference, effect.name);
+      return;
+    }
+    if (!effect.description) return;
+
+    const modal = this.modalService.open(EntityModalComponent, {
+      centered: true,
+      modalDialogClass: 'dark-modal',
+      scrollable: false,
+    });
+    modal.componentInstance.title = effect.name;
+    modal.componentInstance.description = effect.description;
   }
 
   // main websocket event handler

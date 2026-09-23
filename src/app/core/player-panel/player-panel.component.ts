@@ -10,6 +10,8 @@ import {
   combatantWithHitPoints,
   combatantWithInitiative,
   hitPoints,
+  PlayerEffect,
+  playerEffects,
 } from 'src/app/shared/player-tools';
 import { DataService } from 'src/app/shared/services/data.service';
 
@@ -23,6 +25,7 @@ export class PlayerPanelComponent implements OnInit, DoCheck {
   @Input() state: AppState;
   @Output() closePanel = new EventEmitter<void>();
   @Output() showSheet = new EventEmitter<string>();
+  @Output() showEffect = new EventEmitter<PlayerEffect>();
 
   currentHP: number | null = 0;
   temporaryHP: number | null = 0;
@@ -52,6 +55,10 @@ export class PlayerPanelComponent implements OnInit, DoCheck {
 
   get sheetReference(): string | undefined {
     return assignedPlayerReference(this.state);
+  }
+
+  get activeEffects(): PlayerEffect[] {
+    return playerEffects(this.combatant);
   }
 
   get canSetInitiative(): boolean {
@@ -128,5 +135,24 @@ export class PlayerPanelComponent implements OnInit, DoCheck {
 
   openSheet(): void {
     if (this.sheetReference) this.showSheet.emit(this.sheetReference);
+  }
+
+  effectHasDetails(effect: PlayerEffect): boolean {
+    return Boolean(effect.reference || effect.description);
+  }
+
+  effectLabel(effect: PlayerEffect): string {
+    return effect.value ? `${effect.name} ${effect.value}` : effect.name;
+  }
+
+  effectIconUrl(effect: PlayerEffect): string | undefined {
+    const icon = effect.icon;
+    if (!icon || !/\.(?:avif|gif|jpe?g|png|svg|webp)(?:[?#].*)?$/i.test(icon)) return undefined;
+    if (/^(?:data:|https?:)/i.test(icon)) return icon;
+    return `${this.dataService.baseURL}/${icon.replace(/^\//, '')}`;
+  }
+
+  openEffect(effect: PlayerEffect): void {
+    if (this.effectHasDetails(effect)) this.showEffect.emit(effect);
   }
 }

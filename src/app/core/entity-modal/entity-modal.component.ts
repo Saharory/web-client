@@ -17,6 +17,8 @@ export class EntityModalComponent {
   reference: string;
   @Input()
   title = 'Entity';
+  @Input()
+  description?: string;
 
   referencePopup?: string;
   referencePopupTitle = 'Reference';

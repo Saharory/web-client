@@ -9,6 +9,22 @@
     display: block;
     border: 0;
   }
+
+  &.has-description {
+    height: auto;
+    max-height: min(70vh, 640px);
+    overflow: auto;
+  }
+}
+
+.effect-description {
+  max-height: min(70vh, 640px);
+  padding: 1rem;
+  overflow: auto;
+  color: var(--ui-text);
+  background: var(--ui-surface-solid);
+  line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 .reference-popup {

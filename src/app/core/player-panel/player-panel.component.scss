@@ -113,6 +113,75 @@ label {
   color: var(--ui-text);
 }
 
+.effect-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.effect-chip {
+  display: flex;
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.38rem 0.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ui-text);
+  background: var(--ui-control);
+  border: 1px solid var(--ui-border);
+  border-left-width: 0.28rem;
+  border-radius: 6px;
+  text-align: left;
+
+  &:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+
+  &.has-details:hover {
+    background: var(--ui-control-hover);
+    border-color: var(--ui-border-strong);
+  }
+
+  > img,
+  > i:first-child {
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 1.35rem;
+  }
+
+  > img {
+    object-fit: contain;
+  }
+
+  > i:first-child {
+    display: grid;
+    place-items: center;
+    color: var(--ui-text-muted);
+  }
+
+  > span {
+    min-width: 0;
+    flex: 1;
+  }
+
+  strong,
+  small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    margin: 0.08rem 0 0;
+  }
+}
+
+.effect-chevron {
+  color: var(--ui-text-muted);
+  font-size: 0.72rem;
+}
+
 .btn-primary {
   color: var(--ui-accent-text);
   background: var(--ui-accent);
