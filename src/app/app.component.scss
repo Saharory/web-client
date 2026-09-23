@@ -1,5 +1,33 @@
 $gameboard-margin: 75px;
 
+.floating-window {
+    position: fixed;
+    display: block;
+    width: min(400px, calc(100vw - 16px));
+    overflow: hidden;
+    background: var(--ui-surface-solid);
+    border: 1px solid var(--ui-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.75rem 2rem var(--ui-shadow);
+}
+
+.character-window {
+    top: 68px;
+    left: 8px;
+}
+
+.reference-window {
+    top: 84px;
+    right: 8px;
+}
+
+@media (max-width: 820px) {
+    .reference-window {
+        top: 96px;
+        right: 8px;
+    }
+}
+
 #bottom-bar {
     position: fixed;
     bottom: 0;

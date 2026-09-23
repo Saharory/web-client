@@ -3,7 +3,31 @@
   <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)" (areaTemplateOptions)="areaTemplateToolOptionsChanged($event)" (clearAreaTemplate)="clearAreaTemplatePreview()"></app-toolbar>
 
   @if (showPlayerPanel) {
-    <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showEntityAction($event, 'Character')" (showEffect)="showEffectAction($event)"></app-player-panel>
+    <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showCharacterSheet($event)" (showEffect)="showEffectAction($event)"></app-player-panel>
+  }
+
+  @if (characterWindow) {
+    <section class="floating-window character-window" [style.z-index]="characterWindowZ" (pointerdown)="focusFloatingWindow('character')">
+      <app-entity-modal
+        [title]="characterWindow.title"
+        [reference]="characterWindow.reference"
+        (closeWindow)="closeFloatingWindow('character')"
+        (showReference)="showReferenceAction($event)"
+      ></app-entity-modal>
+    </section>
+  }
+
+  @if (referenceWindow) {
+    <section class="floating-window reference-window" [style.z-index]="referenceWindowZ" (pointerdown)="focusFloatingWindow('reference')">
+      <app-entity-modal
+        [title]="referenceWindow.title"
+        [reference]="referenceWindow.reference"
+        [description]="referenceWindow.description"
+        [autoSize]="true"
+        (closeWindow)="closeFloatingWindow('reference')"
+        (showReference)="showReferenceAction($event)"
+      ></app-entity-modal>
+    </section>
   }
 
   @if (zoomControls) {

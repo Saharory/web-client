@@ -1,6 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { entityFrameAction, rollCommand } from 'src/app/shared/entity-frame-interactions';
+import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { EntityReferenceAction, entityFrameAction, rollCommand } from 'src/app/shared/entity-frame-interactions';
 import { Message, MessageType } from 'src/app/shared/models/message';
 import { WSEventName } from 'src/app/shared/models/wsevent';
 import { DataService } from 'src/app/shared/services/data.service';
@@ -11,42 +10,80 @@ import { DataService } from 'src/app/shared/services/data.service';
     styleUrls: ['./entity-modal.component.scss'],
     standalone: false
 })
-export class EntityModalComponent {
+export class EntityModalComponent implements OnChanges {
 
   @Input()
-  reference: string;
+  reference?: string;
   @Input()
   title = 'Entity';
   @Input()
   description?: string;
+  @Input()
+  autoSize = false;
 
-  referencePopup?: string;
-  referencePopupTitle = 'Reference';
+  @Output()
+  closeWindow = new EventEmitter<void>();
+  @Output()
+  showReference = new EventEmitter<EntityReferenceAction>();
 
-  get url() {
-    return `${this.dataService.baseURL}${this.reference}`
+  frameHeight = 280;
+  frameLoading = true;
+
+  get url(): string | undefined {
+    return this.reference ? `${this.dataService.baseURL}${this.reference}` : undefined;
   }
 
-  get referencePopupUrl(): string | undefined {
-    return this.referencePopup ? `${this.dataService.baseURL}${this.referencePopup}` : undefined;
-  }
+  constructor(
+    private dataService: DataService,
+    private changeDetector: ChangeDetectorRef,
+    private zone: NgZone,
+  ) {}
 
-  constructor(public modalInstance: NgbActiveModal, private dataService: DataService) {}
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['reference'] || changes['description']) {
+      this.frameHeight = 280;
+      this.frameLoading = Boolean(this.reference && !this.description);
+    }
+  }
 
   frameLoaded(frame: HTMLIFrameElement): void {
     try {
       const frameDocument = frame.contentDocument;
-      if (!frameDocument || frameDocument.documentElement.dataset['webClientInteractions'] === 'true') return;
-      frameDocument.documentElement.dataset['webClientInteractions'] = 'true';
-      frameDocument.addEventListener('click', event => this.handleFrameClick(event), true);
+      if (!frameDocument) return;
+      if (frameDocument.documentElement.dataset['webClientInteractions'] !== 'true') {
+        frameDocument.documentElement.dataset['webClientInteractions'] = 'true';
+        frameDocument.addEventListener('click', event => this.handleFrameClick(event), true);
+      }
+
+      if (this.autoSize) {
+        frame.style.height = '1px';
+        requestAnimationFrame(() => this.measureFrame(frame));
+      } else {
+        this.frameLoading = false;
+      }
     } catch (error) {
       console.debug('Unable to attach entity frame interactions', error);
+      this.frameLoading = false;
     }
   }
 
-  closeReferencePopup(): void {
-    this.referencePopup = undefined;
-    this.referencePopupTitle = 'Reference';
+  private measureFrame(frame: HTMLIFrameElement): void {
+    try {
+      const frameDocument = frame.contentDocument;
+      const contentHeight = Math.max(
+        frameDocument?.body?.scrollHeight || 0,
+        frameDocument?.documentElement?.scrollHeight || 0,
+      );
+      const maximum = Math.min(720, Math.max(240, window.innerHeight - 170));
+      this.frameHeight = Math.max(120, Math.min(contentHeight || 280, maximum));
+    } catch (error) {
+      console.debug('Unable to size entity frame', error);
+      this.frameHeight = Math.min(560, Math.max(240, window.innerHeight - 170));
+    }
+
+    frame.style.height = '100%';
+    this.frameLoading = false;
+    this.changeDetector.detectChanges();
   }
 
   private handleFrameClick(event: MouseEvent): void {
@@ -63,8 +100,7 @@ export class EntityModalComponent {
     event.stopImmediatePropagation();
 
     if (action.kind === 'reference') {
-      this.referencePopup = action.reference;
-      this.referencePopupTitle = action.title;
+      this.zone.run(() => this.showReference.emit(action));
       return;
     }
 

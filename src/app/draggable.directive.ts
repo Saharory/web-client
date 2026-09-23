@@ -17,12 +17,12 @@ export class DraggableDirective implements AfterViewInit {
     let element = this.element.nativeElement;
     this.handleElement = this.element.nativeElement;
     this.handleElement.style.cursor = "move";
-    this.modalElement = element.closest(".modal-content");
+    this.modalElement = element.closest(".modal-content, .floating-window");
   }
 
   @HostListener("mousedown", ["$event"])
   public onMouseDown(event: MouseEvent) {
-    if (event.button === 2 || !this.handleElement) {
+    if (event.button === 2 || !this.handleElement || !this.modalElement) {
         return; // prevents right click drag or initialized handleElement
     }
 
@@ -30,12 +30,16 @@ export class DraggableDirective implements AfterViewInit {
         return; // prevents dragging of other elements than children of handleElement
     }
 
+    const target = event.target as Element | null;
+    if (target?.closest('button, a, input, select, textarea')) return;
+
     //enable dragging
     this.isDraggable = true;
 
     //store original position
-    this.topStart = event.clientY - Number(this.modalElement.style.top.replace('px', ''));
-    this.leftStart = event.clientX - Number(this.modalElement.style.left.replace('px', ''));
+    const bounds = this.modalElement.getBoundingClientRect();
+    this.topStart = event.clientY - bounds.top;
+    this.leftStart = event.clientX - bounds.left;
     event.preventDefault();
 }
 

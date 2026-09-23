@@ -1,23 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { EntityModalComponent } from './entity-modal.component';
 
 describe('EntityModalComponent', () => {
-  let component: EntityModalComponent;
-  let fixture: ComponentFixture<EntityModalComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [ EntityModalComponent ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(EntityModalComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
   it('should create', () => {
+    const component = new EntityModalComponent(
+      { baseURL: 'http://127.0.0.1:8080' } as any,
+      { detectChanges: () => undefined } as any,
+      { run: callback => callback() } as any,
+    );
     expect(component).toBeTruthy();
   });
 });

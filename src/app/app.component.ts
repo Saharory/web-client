@@ -30,12 +30,18 @@ import { Point } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { ZoombarComponent } from './core/zoombar/zoombar.component';
 import { Meta } from '@angular/platform-browser';
-import { EntityModalComponent } from './core/entity-modal/entity-modal.component';
 import { Message } from './shared/models/message';
 import { Game } from './shared/models/game';
 import { Screen } from './shared/models/screen';
 import { ActiveCombatant, Role } from './shared/models/combatant';
 import { PlayerEffect } from './shared/player-tools';
+import { EntityReferenceAction } from './shared/entity-frame-interactions';
+
+interface EntityWindowState {
+  title: string;
+  reference?: string;
+  description?: string;
+}
 
 interface WebAppInterface {
   showText(text: string): any;
@@ -57,6 +63,12 @@ export class AppComponent implements OnInit, AfterViewInit {
   env = environment;
 
   state: AppState;
+
+  characterWindow?: EntityWindowState;
+  referenceWindow?: EntityWindowState;
+  characterWindowZ = 1060;
+  referenceWindowZ = 1061;
+  private floatingWindowZ = 1061;
 
   destroy$: Subject<boolean> = new Subject<boolean>();
 
@@ -290,19 +302,18 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (this.toolbarComponent) this.toolbarComponent.player = false;
   }
 
-  showEntityAction(reference: string, title = 'Entity') {
-    console.debug(`showing entity modal: ${reference}`)
+  showCharacterSheet(reference: string) {
+    this.characterWindow = { title: 'Character', reference };
+    this.focusFloatingWindow('character');
+  }
 
-    let modal = this.modalService.open(EntityModalComponent, {centered: true, modalDialogClass: 'dark-modal', scrollable: false})
-    modal.componentInstance.state = this.state
-    modal.componentInstance.reference = reference
-    modal.componentInstance.title = title
-    
-    modal.result.then(result => {
-      console.debug(`Entity component closed with: ${result}`);
-    }, reason => {
-      console.debug(`Entity component dismissed ${reason}`)
-    });
+  showEntityAction(reference: string, title = 'Reference') {
+    this.referenceWindow = { title, reference };
+    this.focusFloatingWindow('reference');
+  }
+
+  showReferenceAction(action: EntityReferenceAction) {
+    this.showEntityAction(action.reference, action.title);
   }
 
   showEffectAction(effect: PlayerEffect) {
@@ -312,13 +323,19 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     if (!effect.description) return;
 
-    const modal = this.modalService.open(EntityModalComponent, {
-      centered: true,
-      modalDialogClass: 'dark-modal',
-      scrollable: false,
-    });
-    modal.componentInstance.title = effect.name;
-    modal.componentInstance.description = effect.description;
+    this.referenceWindow = { title: effect.name, description: effect.description };
+    this.focusFloatingWindow('reference');
+  }
+
+  closeFloatingWindow(window: 'character' | 'reference') {
+    if (window === 'character') this.characterWindow = undefined;
+    else this.referenceWindow = undefined;
+  }
+
+  focusFloatingWindow(window: 'character' | 'reference') {
+    this.floatingWindowZ += 1;
+    if (window === 'character') this.characterWindowZ = this.floatingWindowZ;
+    else this.referenceWindowZ = this.floatingWindowZ;
   }
 
   // main websocket event handler
