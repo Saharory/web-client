@@ -41,6 +41,12 @@ export class DraggableDirective implements AfterViewInit {
     const bounds = this.modalElement.getBoundingClientRect();
     this.topStart = event.clientY - bounds.top;
     this.leftStart = event.clientX - bounds.left;
+
+    // Preserve the rendered position before replacing CSS anchors such as
+    // `right: 8px`. Otherwise a right-anchored window jumps left as soon as
+    // its header is pressed, even when the pointer never moves.
+    this.modalElement.style.top = `${bounds.top}px`;
+    this.modalElement.style.left = `${bounds.left}px`;
     this.modalElement.style.right = 'auto';
     this.modalElement.style.bottom = 'auto';
     this.handleElement.setPointerCapture(event.pointerId);
