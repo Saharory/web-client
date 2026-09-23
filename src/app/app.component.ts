@@ -289,12 +289,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (this.toolbarComponent) this.toolbarComponent.player = false;
   }
 
-  showEntityAction(reference: string) {
+  showEntityAction(reference: string, title = 'Entity') {
     console.debug(`showing entity modal: ${reference}`)
 
     let modal = this.modalService.open(EntityModalComponent, {centered: true, modalDialogClass: 'dark-modal', scrollable: false})
     modal.componentInstance.state = this.state
     modal.componentInstance.reference = reference
+    modal.componentInstance.title = title
     
     modal.result.then(result => {
       console.debug(`Entity component closed with: ${result}`);
