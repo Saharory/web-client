@@ -13,7 +13,7 @@ $gameboard-margin: 75px;
 
 .character-window {
     top: 68px;
-    left: 8px;
+    left: max(8px, calc(50vw - 200px));
 }
 
 .reference-window {

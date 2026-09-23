@@ -49,30 +49,62 @@ function rollLabel(value?: string | null): { name: string; rollType?: EntityRoll
 
 export function entityFrameAction(anchor: HTMLAnchorElement, appBaseURL: string): EntityFrameAction | undefined {
   const rawHref = (anchor.getAttribute('href') || '').trim();
-  if (!rawHref || rawHref.startsWith('#') || /^javascript:/i.test(rawHref)) return undefined;
-  if (anchor.target && anchor.target.toLowerCase() !== '_self') return undefined;
+  const decodedHref = (() => {
+    try { return decodeURIComponent(rawHref); } catch { return rawHref; }
+  })();
+  const data = anchor.dataset;
+  let destination: URL | undefined;
+  try {
+    destination = rawHref ? new URL(rawHref, `${new URL(appBaseURL).origin}/`) : undefined;
+  } catch {
+    destination = undefined;
+  }
 
-  const rollMatch = rawHref.match(/^(?:\.\/)?\/?roll(?:\/([^?#]+))?(?:[?#].*)?$/i);
-  if (rollMatch) {
-    const pathFormula = rollMatch[1] ? decodeURIComponent(rollMatch[1]) : '';
-    const formula = rollFormula(pathFormula) || rollFormula(anchor.textContent || '');
+  const pathSegments = destination?.pathname.split('/').filter(Boolean) || [];
+  const rollIndex = pathSegments.findIndex(segment => segment.toLowerCase() === 'roll');
+  const inlineRoll = decodedHref.match(/(?:^|[/:])roll(?:[/:\s]+([^?#\s"']+))?/i);
+  const isRoll = rollIndex >= 0
+    || Boolean(inlineRoll)
+    || data['action']?.toLowerCase() === 'roll'
+    || anchor.classList.contains('roll')
+    || anchor.classList.contains('rollable')
+    || data['roll'] !== undefined
+    || data['formula'] !== undefined;
+
+  if (isRoll) {
+    const encodedPathFormula = rollIndex >= 0 ? pathSegments[rollIndex + 1] || '' : inlineRoll?.[1] || '';
+    const pathFormula = (() => {
+      try { return decodeURIComponent(encodedPathFormula); } catch { return encodedPathFormula; }
+    })();
+    const queryFormula = destination?.searchParams.get('formula') || destination?.searchParams.get('dice') || '';
+    const formula = rollFormula(data['formula'] || data['roll'] || queryFormula)
+      || rollFormula(pathFormula)
+      || rollFormula(anchor.textContent || '');
     if (!formula) return undefined;
+
+    const pathLabel = rollIndex >= 0 && pathSegments.length > rollIndex + 2
+      ? pathSegments.slice(rollIndex + 2).join('/')
+      : undefined;
+    const label = data['name'] || data['label'] || data['rollName'] || anchor.getAttribute('title') || pathLabel;
 
     return {
       kind: 'roll',
       formula,
-      ...rollLabel(anchor.getAttribute('title')),
+      ...rollLabel(label),
     };
   }
 
+  if (!rawHref || rawHref.startsWith('#') || /^javascript:/i.test(rawHref)) return undefined;
+  if (anchor.target && anchor.target.toLowerCase() !== '_self') return undefined;
+
   try {
     const base = new URL(appBaseURL);
-    const destination = new URL(rawHref, `${base.origin}/`);
-    if (destination.origin !== base.origin) return undefined;
+    const referenceDestination = destination || new URL(rawHref, `${base.origin}/`);
+    if (referenceDestination.origin !== base.origin) return undefined;
 
     return {
       kind: 'reference',
-      reference: `${destination.pathname}${destination.search}${destination.hash}`,
+      reference: `${referenceDestination.pathname}${referenceDestination.search}${referenceDestination.hash}`,
       title: (anchor.textContent || '').trim() || 'Reference',
     };
   } catch {
@@ -83,5 +115,5 @@ export function entityFrameAction(anchor: HTMLAnchorElement, appBaseURL: string)
 export function rollCommand(action: EntityRollAction): string {
   const safeName = action.name.replace(/[\[\]]/g, '').trim() || 'Custom';
   const label = action.rollType ? `${safeName}:${action.rollType}` : safeName;
-  return `/roll ${action.formula} [${label}]`;
+  return `/r ${action.formula} [${label}]`;
 }

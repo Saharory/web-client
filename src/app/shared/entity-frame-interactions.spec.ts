@@ -14,12 +14,30 @@ describe('entity frame interactions', () => {
     const action = entityFrameAction(anchor('roll', '+7', 'Jaws/attack'), 'http://127.0.0.1:8080');
 
     expect(action).toEqual({ kind: 'roll', formula: '1d20+7', name: 'Jaws', rollType: 'attack' });
-    expect(rollCommand(action as any)).toBe('/roll 1d20+7 [Jaws:attack]');
+    expect(rollCommand(action as any)).toBe('/r 1d20+7 [Jaws:attack]');
   });
 
   it('uses a dice formula embedded in a roll path', () => {
     const action = entityFrameAction(anchor('/roll/d20%2B3', '+3', 'Perception'), 'http://127.0.0.1:8080');
     expect(action).toEqual({ kind: 'roll', formula: '1d20+3', name: 'Perception' });
+  });
+
+  it('recognizes Encounter+ roll links with route metadata or data attributes', () => {
+    const routed = entityFrameAction(
+      anchor('/entity/roll/2d6%2B4/Fireball/damage', '2d6+4'),
+      'http://127.0.0.1:8080',
+    );
+    expect(routed).toEqual({ kind: 'roll', formula: '2d6+4', name: 'Fireball', rollType: 'damage' });
+
+    const attributed = anchor('#', '+5');
+    attributed.dataset['action'] = 'roll';
+    attributed.dataset['name'] = 'Stealth/check';
+    expect(entityFrameAction(attributed, 'http://127.0.0.1:8080')).toEqual({
+      kind: 'roll',
+      formula: '1d20+5',
+      name: 'Stealth',
+      rollType: 'check',
+    });
   });
 
   it('opens same-host rules as references', () => {

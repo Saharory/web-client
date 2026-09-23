@@ -1,4 +1,4 @@
-import { Directive,ElementRef,HostListener,AfterViewInit } from "@angular/core";
+import { Directive, ElementRef, HostListener, AfterViewInit } from "@angular/core";
 
 @Directive({
     selector: "[appDraggable]",
@@ -17,13 +17,14 @@ export class DraggableDirective implements AfterViewInit {
     let element = this.element.nativeElement;
     this.handleElement = this.element.nativeElement;
     this.handleElement.style.cursor = "move";
+    this.handleElement.style.touchAction = "none";
     this.modalElement = element.closest(".modal-content, .floating-window");
   }
 
-  @HostListener("mousedown", ["$event"])
-  public onMouseDown(event: MouseEvent) {
-    if (event.button === 2 || !this.handleElement || !this.modalElement) {
-        return; // prevents right click drag or initialized handleElement
+  @HostListener("pointerdown", ["$event"])
+  public onPointerDown(event: PointerEvent) {
+    if (event.button !== 0 || !this.handleElement || !this.modalElement) {
+        return;
     }
 
     if (event.target !== this.handleElement && !this.searchParentNode(<any>event.target, this.handleElement)) {
@@ -40,25 +41,37 @@ export class DraggableDirective implements AfterViewInit {
     const bounds = this.modalElement.getBoundingClientRect();
     this.topStart = event.clientY - bounds.top;
     this.leftStart = event.clientX - bounds.left;
+    this.modalElement.style.right = 'auto';
+    this.modalElement.style.bottom = 'auto';
+    this.handleElement.setPointerCapture(event.pointerId);
     event.preventDefault();
-}
-
-  @HostListener("mouseup", ["$event"])
-  public onMouseUp(event: MouseEvent) {
-    this.isDraggable = false;
   }
 
-  @HostListener("mousemove", ["$event"])
-  public onMouseMove(event: MouseEvent) {
-    if (this.isDraggable) {
-      this.modalElement.style.top = event.clientY - this.topStart + "px";
-      this.modalElement.style.left = event.clientX - this.leftStart + "px";
+  @HostListener("pointerup", ["$event"])
+  @HostListener("pointercancel", ["$event"])
+  public onPointerUp(event: PointerEvent) {
+    this.isDraggable = false;
+    if (this.handleElement?.hasPointerCapture(event.pointerId)) {
+      this.handleElement.releasePointerCapture(event.pointerId);
     }
   }
 
-  @HostListener("mouseleave", ["$event"])
-  public onMouseLeave(event: MouseEvent) {
-    this.isDraggable = false;
+  @HostListener("pointermove", ["$event"])
+  public onPointerMove(event: PointerEvent) {
+    if (this.isDraggable) {
+      const bounds = this.modalElement.getBoundingClientRect();
+      const minimumVisible = 72;
+      const left = Math.min(
+        window.innerWidth - minimumVisible,
+        Math.max(minimumVisible - bounds.width, event.clientX - this.leftStart),
+      );
+      const top = Math.min(
+        window.innerHeight - 44,
+        Math.max(0, event.clientY - this.topStart),
+      );
+      this.modalElement.style.top = `${top}px`;
+      this.modalElement.style.left = `${left}px`;
+    }
   }
 
   private searchParentNode(element: Node, tag: Node): Node {
