@@ -41,10 +41,11 @@ export class LocalAreaTemplateView extends AreaEffectView {
 
     this.affectedCells.clear();
     this.distanceText.text = '';
-    this.affectedCells.visible = this.editing;
+    this.affectedCells.visible = this.areaEffect.length > 0;
     this.distanceText.visible = this.areaEffect.length > 0;
-    if (this.editing) {
+    if (this.affectedCells.visible) {
       this.drawAffectedCells();
+      this.affectedCells.alpha = this.editing ? 0.22 : 0.12;
     }
     if (this.distanceText.visible) this.drawDistance();
     this.addChildAt(this.affectedCells, 0);
@@ -67,7 +68,6 @@ export class LocalAreaTemplateView extends AreaEffectView {
     );
     const path = centers.flatMap(point => [point.x, point.y]);
     this.grid.pathGraphics(path, { width: 1, height: 1 }, new PIXI.Color(this.areaEffect.color).toNumber(), this.affectedCells);
-    this.affectedCells.alpha = 0.22;
   }
 
   private drawDistance() {
