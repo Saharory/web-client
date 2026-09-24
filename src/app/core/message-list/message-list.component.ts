@@ -2,6 +2,7 @@ import { Component, OnInit, Input, ElementRef, ViewChildren, QueryList, ViewChil
 import { AppState } from 'src/app/shared/models/app-state';
 // import { Lightbox } from 'ngx-lightbox';
 import { DataService } from 'src/app/shared/services/data.service';
+import { Utils } from 'src/app/shared/utils';
 import { Message, MessageType } from 'src/app/shared/models/message';
 import { WSEventName } from 'src/app/shared/models/wsevent';
 
@@ -9,6 +10,7 @@ import { WSEventName } from 'src/app/shared/models/wsevent';
   selector: 'app-message-list',
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class MessageListComponent implements OnInit {
@@ -16,9 +18,9 @@ export class MessageListComponent implements OnInit {
   private scrollContainer: any;
   isNearBottom: boolean = true;
 
-  @ViewChild('scrollframe', { static: true }) scrollFrame: ElementRef;
-  @ViewChild('messageinputarea', { static: true }) messageInputArea: ElementRef;
-  @ViewChildren('message') itemElements: QueryList<any>;
+  @ViewChild('scrollframe', { static: true }) scrollFrame!: ElementRef;
+  @ViewChild('messageinputarea', { static: true }) messageInputArea!: ElementRef;
+  @ViewChildren('message') itemElements!: QueryList<any>;
 
   @Input()
   messages: Array<Message> = []
@@ -32,11 +34,11 @@ export class MessageListComponent implements OnInit {
     this.sendMessage();
   }
 
-  quickRoll(r) {
+  quickRoll(r: string) {
     let rollStr = ""
     const rollRE = /^(\/r(?:oll)? )?(([0-9]+)[dD]([0-9]+)|0)?(?:(kh|kl)1?)?((?:\+|\-)[0-9]+)? ?(.*)?/;
     const m = rollRE.exec(this.messageInput);
-    if (this.messageInput != "" && m == null) {
+    if (m == null) {
       return;
     }
     const [cmd, roll, num, sides, keep, mods, text] = m.slice(1);
@@ -56,7 +58,7 @@ export class MessageListComponent implements OnInit {
     if (roll) {
       if (r == sides) {
         rollStr += (Number(num) + 1).toString() + "d" + sides;
-      } else if (!isNaN(r)) {
+      } else if (!isNaN(Number(r))) {
         if (r == "adv" || r == "dis" || keep) {
           rollStr += "2d" + r;
         } else {
@@ -69,7 +71,7 @@ export class MessageListComponent implements OnInit {
           rollStr += roll;
         }
       }
-    } else if (!isNaN(r)) {
+    } else if (!isNaN(Number(r))) {
       rollStr += "1d" + r;
     } else if (mod != 0 || keep || r == "adv" || r == "dis") {
       rollStr += "0"
@@ -116,23 +118,26 @@ export class MessageListComponent implements OnInit {
     }
 
     if (text == "/help" || text == "/h") {
-      let message = new Message();
-      message.type = MessageType.chat;
-      message.source = "Help Command";
-      message.color = "#6e7ed7";
-      message.content = "Dice roll command:</br><code>/r[oll] &lt;dice notation&gt; [[title[:check|save|attack|damage]]]</code>" +
-        "Examples:<br>" +
-        "<code>" +
-        "/r 2d20kh — keep highest\n" +
-        "/r 2d20kl — keep lowest\n" +
-        "/r 4d6dl — drop lowest\n" +
-        "<br>" +
-        "/r 1d20+3 [initiative]\n" +
-        "/r 1d20+3 [cha:save]\n" +
-        "/r 1d20+3 [acrobatics:check]\n" +
-        "/r 1d20+3 [dagger:attack]\n" +
-        "/r 1d4+3 [dagger:damage]" +
-        "</code>";
+      let message: Message = {
+        id: "",
+        type: MessageType.chat,
+        source: "Help Command",
+        color: "#6e7ed7",
+        created: new Date(),
+        content: "Dice roll command:</br><code>/r[oll] &lt;dice notation&gt; [[title[:check|save|attack|damage]]]</code>" +
+          "Examples:<br>" +
+          "<code>" +
+          "/r 2d20kh — keep highest\n" +
+          "/r 2d20kl — keep lowest\n" +
+          "/r 4d6dl — drop lowest\n" +
+          "<br>" +
+          "/r 1d20+3 [initiative]\n" +
+          "/r 1d20+3 [cha:save]\n" +
+          "/r 1d20+3 [acrobatics:check]\n" +
+          "/r 1d20+3 [dagger:attack]\n" +
+          "/r 1d4+3 [dagger:damage]" +
+          "</code>",
+      };
       // this.dataService.state.messages.push(message);
       return;
     }
@@ -140,19 +145,16 @@ export class MessageListComponent implements OnInit {
     console.log("sending message: " + text);
 
     let name = localStorage.getItem("userName") || "Unknown";
-    let color = localStorage.getItem("userColor");
+    let color = Utils.userColor();
 
-    let message = new Message();
-    message.source = name;
-    message.color = color;
-
-    if (text.startsWith("/")) {
-      message.type = MessageType.command;
-      message.content = text
-    } else {
-      message.type = MessageType.chat;
-      message.content = text;
-    }
+    let message: Message = {
+      id: "",
+      type: text.startsWith("/") ? MessageType.command : MessageType.chat,
+      source: name,
+      color: color,
+      content: text,
+      created: new Date(),
+    };
     this.dataService.send({ name: WSEventName.createMessage, data: message });
     this.scrollToBottom();
   }

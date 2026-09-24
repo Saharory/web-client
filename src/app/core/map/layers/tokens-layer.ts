@@ -8,7 +8,7 @@ export class TokensLayer extends Layer {
 
     tokens: Array<Token> = [];
     views: Array<TokenView> = [];
-    grid: Grid;
+    grid!: Grid;
 
     constructor(private dataService: DataService) {
         super();
@@ -32,6 +32,7 @@ export class TokensLayer extends Layer {
     }
 
     clear() {
+        this.views.forEach(view => view.dispose())
         this.views = []
         this.removeChildren()
     }

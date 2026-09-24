@@ -1,0 +1,18 @@
+{
+    "id": "web-client",
+    "name": "Encounter+ Community Web Client",
+    "version": "0.9.17.1",
+    "description": "community web client for Encounter+ VTT app",
+    "authors": [
+        {
+            "name": "Encounter+ Dev Team"
+        },
+        {
+            "name": "Saharory and community contributors"
+        }
+    ],
+    "repository": "https://github.com/Saharory/web-client",
+    "compatibility": {
+        "minimum": "5.0.8"
+    }
+}

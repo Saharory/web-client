@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Combatant } from 'src/app/shared/models/combatant';
-import { GridType, Map } from 'src/app/shared/models/map';
+import { GridType, Map, MapLayer } from 'src/app/shared/models/map';
 import { Layer } from './layers/layer';
 import { GridLayer } from './layers/grid-layer';
 import { BackgroundLayer } from './layers/background-layer';
@@ -14,6 +14,7 @@ import { TilesLayer } from './layers/tiles-layer';
 import { AreaEffectsLayer } from './layers/area-effects-layer';
 import { AreaEffectView } from './views/area-effect-view';
 import { TileView } from './views/tile-view';
+import { tileLayer } from 'src/app/shared/models/tile';
 import { AurasLayer } from './layers/auras-layer';
 import { EffectsLayer } from './layers/effects-layer';
 import { DrawingsLayer } from './layers/drawings-layer';
@@ -26,7 +27,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from 'src/app/shared/models/token';
 import { SquareGrid } from './models/square-grid';
 import { HexGrid } from './models/hex-grid';
-import { ProgramManager } from 'src/app/shared/utils';
+import { ProgramManager, Utils } from 'src/app/shared/utils';
 import { VisionLayer } from './layers/vision-layer';
 import { MeasurementsLayer } from './layers/measurements-layer';
 import { MeasurementView } from './views/measurement-view';
@@ -36,16 +37,17 @@ import { View } from './views/view';
 import { AreaEffect, AreaEffectShape } from 'src/app/shared/models/area-effect';
 import { areaTemplateDimensions } from 'src/app/shared/area-template-tools';
 import { LocalAreaTemplateView } from './views/local-area-template-view';
+import { AssetVideo } from 'src/app/shared/models/asset';
 
 export class MapContainer extends Layer {
 
   mapLayer: Layer
-  mapTexture: PIXI.RenderTexture
+  mapTexture!: PIXI.RenderTexture
 
   backgroundLayer: BackgroundLayer
   gridLayer: GridLayer
   pathsLayer: PathsLayer
-  canvasLayer: Layer
+  canvasLayer!: Layer
   areaEffectsLayer: AreaEffectsLayer
   monstersLayer: TokensLayer
   playersLayer: TokensLayer
@@ -66,8 +68,8 @@ export class MapContainer extends Layer {
   overlaySprite: PIXI.Sprite
 
   // data
-  map: Map;
-  state: AppState;
+  map: Map | undefined;
+  state!: AppState;
   grid: Grid = new SquareGrid()
 
   dragging: boolean = false
@@ -208,7 +210,7 @@ export class MapContainer extends Layer {
       return
     }
 
-    this.backgroundLayer.update(this.state.map)
+    this.backgroundLayer.update(this.map)
 
 
     // if (this.map.video) {
@@ -216,13 +218,13 @@ export class MapContainer extends Layer {
     // }
 
     // create grid
-    if (this.state.map.gridType == GridType.square) {
+    if (this.map.gridType == GridType.square) {
       this.grid = new SquareGrid()
     } else {
       this.grid = new HexGrid()
     }
 
-    this.grid.update(this.state.map)
+    this.grid.update(this.map)
     this.gridLayer.update(this.grid)
 
     if (this.localAreaTemplateView) {
@@ -264,17 +266,27 @@ export class MapContainer extends Layer {
   }
 
   updateTiles() {
-    this.bottomLayer.tiles = this.state.map.tiles.filter(tile => tile.layer == "map");
-    this.middleLayer.tiles = this.state.map.tiles.filter(tile => tile.layer == "object");
-    this.topLayer.tiles = this.state.map.tiles.filter(tile => tile.layer == "token");
+    const map = this.state.map
+    if (map == null) {
+      return
+    }
+
+    this.bottomLayer.tiles = map.tiles.filter(tile => tileLayer(tile) == MapLayer.map);
+    this.middleLayer.tiles = map.tiles.filter(tile => tileLayer(tile) == MapLayer.object);
+    this.topLayer.tiles = map.tiles.filter(tile => tileLayer(tile) == MapLayer.token);
   }
 
   updateTokens() {
-    this.monstersLayer.tokens = this.state.map.tokens.filter(token => !(token.role == Role.friendly && token.vision && token.vision?.enabled))
-    this.playersLayer.tokens = this.state.map.tokens.filter(token => token.role == Role.friendly && token.vision && token.vision?.enabled)
+    const map = this.state.map
+    if (map == null) {
+      return
+    }
+
+    this.monstersLayer.tokens = map.tokens.filter(token => !(token.role == Role.friendly && token.vision && token.vision?.enabled))
+    this.playersLayer.tokens = map.tokens.filter(token => token.role == Role.friendly && token.vision && token.vision?.enabled)
   }
 
-  updateTurned(combatant: Combatant) {
+  updateTurned(combatant: Combatant | null) {
     if (this.turned != null) {
       this.turned.turned = false;
       this.turned.updateLabel();
@@ -307,13 +319,13 @@ export class MapContainer extends Layer {
 
   resetPaths() {
     for (let view of this.playersLayer.views) {
-      view.token.path = null
+      view.token.path = undefined
       view.pathView.clear()
       view.updateElevation()
     }
 
     for (let view of this.monstersLayer.views) {
-      view.token.path = null
+      view.token.path = undefined
       view.pathView.clear()
       view.updateElevation()
     }
@@ -337,6 +349,42 @@ export class MapContainer extends Layer {
     // paths
     this.pathsLayer.tokens = [...this.playersLayer.views, ...this.monstersLayer.views]
     this.pathsLayer.draw()
+
+    // auras: the views are new ones, so the layer holds the aura containers of views now gone
+    this.drawAuras()
+  }
+
+  drawAuras() {
+    this.aurasLayer.size = this.size
+    this.aurasLayer.tokens = [...this.playersLayer.views, ...this.monstersLayer.views]
+    this.aurasLayer.draw()
+  }
+
+  /**
+   * Redraws every view showing a video asset, so a change to `Loader.playsVideoAssets` takes
+   * effect without reloading the map. Everything else is left alone.
+   */
+  redrawVideoAssets() {
+    for (let layer of [this.bottomLayer, this.middleLayer, this.topLayer]) {
+      for (let view of layer.views) {
+        if (AssetVideo.isVideo(view.tile.asset)) {
+          view.draw()
+        }
+      }
+    }
+
+    for (let view of [...this.playersLayer.views, ...this.monstersLayer.views]) {
+      const auraVideo = (view.token.auras || []).some(aura => aura.enabled && AssetVideo.isVideo(aura.asset))
+      if (AssetVideo.isVideo(view.token.asset) || auraVideo) {
+        view.draw()
+      }
+    }
+
+    for (let view of this.areaEffectsLayer.views) {
+      if (AssetVideo.isVideo(view.areaEffect.asset)) {
+        view.draw()
+      }
+    }
   }
 
   async draw() {
@@ -396,7 +444,7 @@ export class MapContainer extends Layer {
     this.gridLayer.draw()
 
     // render to texture
-    this.app.renderer.render({ container: this.mapLayer, target: this.mapTexture, clear: true })
+    this.app?.renderer.render({ container: this.mapLayer, target: this.mapTexture, clear: true })
 
     // vision
     this.visionLayer.size = this.size
@@ -418,9 +466,7 @@ export class MapContainer extends Layer {
     await this.drawTokens()
 
     // auras
-    this.aurasLayer.size = this.size
-    this.aurasLayer.tokens = [...this.playersLayer.views, ...this.monstersLayer.views]
-    this.aurasLayer.draw()
+    this.drawAuras()
 
     this.areaEffectsLayer.size = this.size
     this.areaEffectsLayer.draw()
@@ -598,13 +644,14 @@ export class MapContainer extends Layer {
         this.dataService.send({ name: WSEventName.pointerUpdated, data: this.activePointer });
       }
 
-      this.activePointer = new Pointer();
-      this.activePointer.id = uuidv4();
-      this.activePointer.color = localStorage.getItem("userColor");
-      this.activePointer.source = localStorage.getItem("userName");
-      this.activePointer.x = newPosition.x | 0;
-      this.activePointer.y = newPosition.y | 0;
-      this.activePointer.state = ControlState.start;
+      this.activePointer = {
+        id: uuidv4(),
+        x: newPosition.x | 0,
+        y: newPosition.y | 0,
+        color: Utils.userColor(),
+        source: localStorage.getItem("userName") ?? "",
+        state: ControlState.start,
+      };
 
       // send event
       this.dataService.send({ name: WSEventName.pointerUpdated, data: this.activePointer });
@@ -631,7 +678,7 @@ export class MapContainer extends Layer {
       const newPosition = event.data.getLocalPosition(this.parent);
 
       // out of bounds
-      if (newPosition.x < 0 || newPosition.x > this.w * this.map.scale || newPosition.y < 0 || newPosition.y > this.h * this.map.scale) {
+      if (newPosition.x < 0 || newPosition.x > this.w * (this.map?.scale ?? 1) || newPosition.y < 0 || newPosition.y > this.h * (this.map?.scale ?? 1)) {
         this.activePointer.state = ControlState.end;
         // send event
         this.dataService.send({ name: WSEventName.pointerUpdated, data: this.activePointer });
@@ -663,12 +710,13 @@ export class MapContainer extends Layer {
     this.clearTransientMeasurement()
 
     const position = this.localPosition(event)
-    const measurement = new Measurement()
-    measurement.id = uuidv4()
-    measurement.type = this.measurementType
-    measurement.color = localStorage.getItem('userColor') || '#2f8cff'
-    measurement.hidden = false
-    measurement.data = [position.x, position.y, position.x, position.y]
+    const measurement: Measurement = {
+      id: uuidv4(),
+      type: this.measurementType,
+      color: localStorage.getItem('userColor') || '#2f8cff',
+      hidden: false,
+      data: [position.x, position.y, position.x, position.y],
+    }
 
     this.activeMeasurement = measurement
     this.localMeasurementView = new MeasurementView(measurement, this.grid)
@@ -685,21 +733,20 @@ export class MapContainer extends Layer {
     this.clearLocalAreaTemplate()
 
     const position = this.localPosition(event)
-    const areaTemplate = new AreaEffect()
-    areaTemplate.id = uuidv4()
-    areaTemplate.shape = this.areaTemplateShape
-    areaTemplate.color = localStorage.getItem('userColor') || '#2f8cff'
-    areaTemplate.x = position.x
-    areaTemplate.y = position.y
-    areaTemplate.zIndex = 1000
-    areaTemplate.opacity = 1
-    areaTemplate.angle = 0
-    areaTemplate.radius = 0
-    areaTemplate.length = 0
-    areaTemplate.width = this.grid.size
-    areaTemplate.asset = null
-    areaTemplate.components = []
-    areaTemplate.hidden = false
+    const areaTemplate: AreaEffect = {
+      id: uuidv4(),
+      shape: this.areaTemplateShape,
+      color: localStorage.getItem('userColor') || '#2f8cff',
+      x: position.x,
+      y: position.y,
+      zIndex: 1000,
+      opacity: 1,
+      angle: 0,
+      radius: 0,
+      length: 0,
+      width: this.grid.size,
+      hidden: false,
+    }
 
     this.activeAreaTemplate = areaTemplate
     this.localAreaTemplateView = new LocalAreaTemplateView(areaTemplate, this.grid)

@@ -6,19 +6,20 @@ import { DataService } from 'src/app/shared/services/data.service';
     selector: 'app-combatant',
     templateUrl: './combatant.component.html',
     styleUrls: ['./combatant.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CombatantComponent implements OnInit {
 
   @Input() 
-  public combatant: Combatant;
+  public combatant!: Combatant;
 
   get image(): string {
     return this.combatant.image ? `${this.dataService.protocol}//${this.dataService.remoteHost}${this.combatant.image}` : "assets/img/creature.png"
   }
 
   get name(): string {
-    return this.combatant.entityType == "Character" ? this.combatant.name : this.combatant.label;
+    return (this.combatant.entityType == "Character" ? this.combatant.name : this.combatant.label) ?? "";
   }
 
   get overlayImage(): string {

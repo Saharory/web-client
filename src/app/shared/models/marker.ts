@@ -1,11 +1,11 @@
-export class Marker {
+export interface Marker {
     id: string;
     x: number;
     y: number;
-    name: string;
+    name?: string;
     color: string;
     size: string;
-    label: string;
+    label?: string;
     shape: string;
-    hidden: boolean = false;
+    hidden: boolean;
 }

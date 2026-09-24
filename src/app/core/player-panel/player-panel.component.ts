@@ -22,7 +22,7 @@ import { DataService } from 'src/app/shared/services/data.service';
   standalone: false,
 })
 export class PlayerPanelComponent implements OnInit, DoCheck {
-  @Input() state: AppState;
+  @Input() state!: AppState;
   @Output() closePanel = new EventEmitter<void>();
   @Output() showSheet = new EventEmitter<string>();
   @Output() showEffect = new EventEmitter<PlayerEffect>();

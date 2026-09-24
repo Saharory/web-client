@@ -6,13 +6,13 @@ export enum DrawingShape {
     rectangle = "rectangle"
 }
 
-export class Drawing {
+export interface Drawing {
     id: string;
-    shape: DrawingShape = DrawingShape.polygon;
-    data: Array<number> = [];
-    layer: MapLayer;
-    strokeWidth: number;
-    strokeColor: string;
-    fillColor: string;
-    opacity: number;
+    shape?: DrawingShape;
+    data: Array<number>;
+    layer?: MapLayer;
+    strokeWidth?: number;
+    strokeColor?: string;
+    fillColor?: string;
+    opacity?: number;
 }

@@ -34,7 +34,7 @@ export enum WeatherType {
     fog = "fog",
 }
 
-export class Map {
+export interface Map {
     id: string
     name: string
     slug: string
@@ -48,28 +48,28 @@ export class Map {
     gridType: GridType
     gridStyle: GridStyle
     gridOpacity: number
-    image: string
-    video: string
+    image?: string
+    video?: string
     scale: number
     lineOfSight: boolean
     losDaylight: number
     losVisionLimit: number
     fogOfWar: boolean
     fogExploration: boolean
-    fog: string
-    weatherType: WeatherType = WeatherType.none
+    fog?: string
+    weatherType?: WeatherType
     weatherIntensity: number
     x: number
     y: number
     zoom: number
     width: number
     height: number
-    tiles: Array<Tile> = []
-    tokens: Array<Token> = []
-    areaEffects: Array<AreaEffect> = []
-    markers: Array<Marker> = []
-    drawings: Array<Drawing> = []
-    walls: Array<Wall> = []
-    lights: Array<Light> = []
-    measurements: Array<Measurement> = []
+    tiles: Array<Tile>
+    tokens: Array<Token>
+    areaEffects: Array<AreaEffect>
+    markers: Array<Marker>
+    drawings?: Array<Drawing>
+    walls?: Array<Wall>
+    lights: Array<Light>
+    measurements: Array<Measurement>
 }

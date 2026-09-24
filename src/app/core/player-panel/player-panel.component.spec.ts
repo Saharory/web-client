@@ -1,6 +1,6 @@
 import { AppState } from 'src/app/shared/models/app-state';
-import { Combatant } from 'src/app/shared/models/combatant';
-import { Role, Token } from 'src/app/shared/models/token';
+import { Role } from 'src/app/shared/models/token';
+import { minimalCombatant, minimalToken } from 'src/app/shared/models/testing/fixtures';
 import { WSEventName } from 'src/app/shared/models/wsevent';
 import { PlayerPanelComponent } from './player-panel.component';
 
@@ -10,18 +10,18 @@ describe('PlayerPanelComponent', () => {
     state.userTokenId = 'token-1';
     state.map = {
       tokens: [
-        Object.assign(new Token(), { id: 'token-1', name: 'One', role: Role.friendly, reference: '/character/one' }),
-        Object.assign(new Token(), { id: 'token-2', name: 'Two', role: Role.friendly, reference: '/character/two' }),
+        minimalToken({ id: 'token-1', name: 'One', role: Role.friendly, reference: '/character/one' }),
+        minimalToken({ id: 'token-2', name: 'Two', role: Role.friendly, reference: '/character/two' }),
       ],
     } as any;
     state.game.combatants = [
-      Object.assign(new Combatant(), {
+      minimalCombatant({
         id: 'combatant-1',
         tokenId: 'token-1',
         data: { hp: { current: 10, maximum: 10, temporary: 0 } },
         initiative: [{ id: 'initiative-1', value: null }],
       }),
-      Object.assign(new Combatant(), {
+      minimalCombatant({
         id: 'combatant-2',
         tokenId: 'token-2',
         data: { hp: { current: 16, maximum: 20, temporary: 1 } },

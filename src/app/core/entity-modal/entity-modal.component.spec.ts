@@ -1,12 +1,39 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { SafePipe } from 'safe-pipe';
+
 import { EntityModalComponent } from './entity-modal.component';
+import { DataService } from 'src/app/shared/services/data.service';
 
 describe('EntityModalComponent', () => {
+  let component: EntityModalComponent;
+  let fixture: ComponentFixture<EntityModalComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [EntityModalComponent],
+      imports: [SafePipe],
+      providers: [
+        provideHttpClient(withXhr()),
+        provideHttpClientTesting(),
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(EntityModalComponent);
+    component = fixture.componentInstance;
+    const dataService = TestBed.inject(DataService);
+    dataService.protocol = 'http:';
+    dataService.remoteHost = 'localhost:8080';
+    component.reference = '/monster/goblin';
+    fixture.detectChanges();
+  });
+
   it('should create', () => {
-    const component = new EntityModalComponent(
-      { baseURL: 'http://127.0.0.1:8080' } as any,
-      { detectChanges: () => undefined } as any,
-      { run: callback => callback() } as any,
-    );
     expect(component).toBeTruthy();
+  });
+
+  it('should build the entity url from the reference', () => {
+    expect(component.url).toBe('http://localhost:8080/monster/goblin');
   });
 });

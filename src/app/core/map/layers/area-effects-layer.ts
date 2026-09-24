@@ -8,7 +8,7 @@ export class AreaEffectsLayer extends Layer {
 
     areaEffects: Array<AreaEffect> = [];
     views: Array<AreaEffectView> = [];
-    grid: Grid;
+    grid!: Grid;
 
     constructor(private dataService: DataService) {
         super();
@@ -34,6 +34,7 @@ export class AreaEffectsLayer extends Layer {
     }
 
     clear() {
+        this.views.forEach(view => view.dispose())
         this.views = []
         this.removeChildren();
     }

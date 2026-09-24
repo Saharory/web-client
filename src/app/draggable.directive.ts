@@ -5,11 +5,11 @@ import { Directive, ElementRef, HostListener, AfterViewInit } from "@angular/cor
     standalone: false
 })
 export class DraggableDirective implements AfterViewInit {
-  private modalElement: HTMLElement;
-  private topStart: number;
-  private leftStart: number;
-  private isDraggable: boolean;
-  private handleElement: HTMLElement;
+  private modalElement!: HTMLElement;
+  private topStart: number = 0;
+  private leftStart: number = 0;
+  private isDraggable: boolean = false;
+  private handleElement!: HTMLElement;
 
   constructor(public element: ElementRef) {}
 
@@ -80,7 +80,7 @@ export class DraggableDirective implements AfterViewInit {
     }
   }
 
-  private searchParentNode(element: Node, tag: Node): Node {
+  private searchParentNode(element: Node, tag: Node): Node | null {
     while (element.parentNode) {
         element = element.parentNode;
         if (element === tag) {

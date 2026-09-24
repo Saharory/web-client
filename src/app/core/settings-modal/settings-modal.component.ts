@@ -1,25 +1,28 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from 'src/app/shared/services/data.service';
+import { Utils } from 'src/app/shared/utils';
 import { WSEventName } from 'src/app/shared/models/wsevent';
 import { Role, Token } from 'src/app/shared/models/token';
 import { AppState, RunMode } from 'src/app/shared/models/app-state';
 import { Appearance, saveAppearance, storedAppearance } from 'src/app/shared/appearance';
+import { Loader } from '../map/models/loader';
 
 @Component({
     selector: 'ngbd-modal-basic',
     templateUrl: './settings-modal.component.html',
     styleUrls: ['./settings-modal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SettingsModalComponent implements OnInit {
 
   @Input()
-  public state: AppState
+  public state!: AppState
 
-  remoteHost: string
-  name: string;
-  color: string;
+  remoteHost: string = ""
+  name: string = "";
+  color: string = "";
 
   maxFPSOptions: Array<number> = [5, 15, 30, 60]
   maxFPS: number = 60
@@ -36,7 +39,7 @@ export class SettingsModalComponent implements OnInit {
 
   get tokens(): Array<Token> {
     if (this.state.map != null) {
-      return this.state.map.tokens.filter( token => { return token.role == Role.friendly } ).sort((a, b) => (a.name > b.name) ? 1 : -1)
+      return this.state.map.tokens.filter( token => { return token.role == Role.friendly } ).sort((a, b) => ((a.name ?? "") > (b.name ?? "")) ? 1 : -1)
     } else {
       return []
     }
@@ -44,6 +47,7 @@ export class SettingsModalComponent implements OnInit {
 
   allowVideo: boolean = true
   maxVideoSize: number = 200
+  playVideoAssets: boolean = true
   softEdges: boolean = true
 
   constructor(public modalInstance: NgbActiveModal, private dataService: DataService) { 
@@ -66,6 +70,7 @@ export class SettingsModalComponent implements OnInit {
         this.maxVideoSize = 0
     }
     localStorage.setItem("maxVideoSize", `${this.maxVideoSize}`)
+    localStorage.setItem("playVideoAssets", `${this.playVideoAssets}`)
     localStorage.setItem("softEdges", `${this.softEdges}`)
     localStorage.setItem("runMode", `${this.runMode}`)
     saveAppearance(this.appearance)
@@ -100,10 +105,11 @@ export class SettingsModalComponent implements OnInit {
   ngOnInit() {
     this.remoteHost = this.dataService.remoteHost
     this.name = localStorage.getItem("userName") || "Unknown"
-    this.color = this.color = localStorage.getItem("userColor") || '#'+(Math.random()*0xFFFFFF<<0).toString(16)
+    this.color = Utils.userColor()
     this.maxFPS = parseInt(localStorage.getItem("maxFPS") || "60") || 60
     this.allowVideo = (localStorage.getItem("allowVideo") || "true") == "true"
     this.maxVideoSize = parseInt(localStorage.getItem("maxVideoSize") || "200")
+    this.playVideoAssets = Loader.playsVideoAssets
     this.softEdges = (localStorage.getItem("softEdges") || "true") == "true"
     const storedToken = localStorage.getItem("userTokenId")
     this.tokenId = storedToken && storedToken !== "null" && storedToken !== "undefined" ? storedToken : null

@@ -14,13 +14,13 @@ export class CanvasContainerDirective implements AfterViewInit, OnDestroy {
   element: HTMLDivElement;
 
   // PIXI app and stage references
-  app: PIXI.Application;
-  width: number;
-  height: number;
+  app!: PIXI.Application;
+  width: number = 0;
+  height: number = 0;
 
   readyPromise!: Promise<void>;
 
-  maxTextureSize: number;
+  maxTextureSize: number = 0;
 
   isReady = false;
 
@@ -65,7 +65,7 @@ export class CanvasContainerDirective implements AfterViewInit, OnDestroy {
       await this.app.init(options);
       this.isReady = true;
     } catch (err) {
-      this.toastService.showError(err.message, false);
+      this.toastService.showError(err instanceof Error ? err.message : String(err), false);
       throw err;
     }
 
@@ -79,11 +79,38 @@ export class CanvasContainerDirective implements AfterViewInit, OnDestroy {
     // this.app.ticker.minFPS = 30;
     this.app.ticker.maxFPS = parseInt(localStorage.getItem('maxFPS') || '60', 10) || 60;
 
+    this.maxTextureSize = this.readMaxTextureSize();
+
     // Confirm that WebGL is available
     // if (this.app.renderer.type !== 'webgl') {
     //   this.toastService.showError('No WebGL Support!', false);
     //   throw new Error('No WebGL Support!');
     // }
+  }
+
+  // pixi 8 does not surface a texture size limit, so read it off the underlying
+  // context. the map size guard in MapComponent depends on this being a number:
+  // while it was undefined every comparison against it was false and the guard
+  // silently never fired.
+  private readMaxTextureSize(): number {
+    const renderer = this.app.renderer as any;
+
+    // webgl (the configured preference)
+    const gl = renderer.gl as WebGLRenderingContext | undefined;
+    if (gl) {
+      return gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    }
+
+    // webgpu, in case the preference is ever changed or falls back
+    const limit = renderer.gpu?.device?.limits?.maxTextureDimension2D;
+    if (limit) {
+      return limit;
+    }
+
+    // last resort: the minimum every WebGL2 implementation must support, so the
+    // guard errs towards warning rather than staying silent
+    console.warn('unable to read maximum texture size from renderer, assuming 2048');
+    return 2048;
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -96,7 +123,7 @@ export class CanvasContainerDirective implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('window:resize', ['$event'])
-  onResize(event) {
+  onResize(event: UIEvent) {
 
     if (!this.isReady) {
       return;

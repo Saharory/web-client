@@ -1,5 +1,4 @@
 import { Asset } from './asset';
-import { Component } from './component';
 
 export enum AreaEffectShape {
     cone = "cone",
@@ -10,7 +9,7 @@ export enum AreaEffectShape {
     sphere = "sphere"
 }
 
-export class AreaEffect {
+export interface AreaEffect {
     id: string;
     shape: AreaEffectShape;
     color: string;
@@ -22,7 +21,6 @@ export class AreaEffect {
     radius: number;
     length: number;
     width: number;
-    asset: Asset;
-    components: Array<Component> = [];
-    hidden: boolean = false;
+    asset?: Asset;
+    hidden: boolean;
 }

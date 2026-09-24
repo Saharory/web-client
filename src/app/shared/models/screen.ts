@@ -1,4 +1,3 @@
-
 export enum ScreenInteraction {
     none = "none",
     token = "token",
@@ -11,15 +10,14 @@ export enum SharedVision {
     always = "always",
 }
 
-export class Screen {
-    overlayImage: string
+export interface Screen {
+    overlayImage?: string
     overlayHandoutStyle: string
-    overlayHandountText: string
-    overlayHandoutText: string
+    overlayHandoutText?: string
     interaction: ScreenInteraction
     sharedVision: SharedVision
-    tableTopMode: Boolean
-    scrollLock: Boolean
+    tableTopMode: boolean
+    scrollLock: boolean
     width: number
     height: number
 }

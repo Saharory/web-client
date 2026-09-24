@@ -11,10 +11,11 @@ import { LightboxService } from '../lightbox/lightbox.service';
     selector: 'app-initiative-list',
     templateUrl: './initiative-list.component.html',
     styleUrls: ['./initiative-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChecked, AfterViewInit {
-  static el: HTMLElement;
+  static el: HTMLElement | undefined;
 
   // @Input()
   // public game: Game;
@@ -47,11 +48,16 @@ export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChec
   }
 
   scrollToTurned(turnedId?: string) {
+    const host = InitiativeListComponent.el
+    if (host == null) {
+      return
+    }
+
     // scroll to turned element
     const initiativeId = turnedId || this.initiativeId
     console.debug(initiativeId);
     const selector = `[data-id="${initiativeId}"]`;
-    const el = InitiativeListComponent.el.querySelector(selector);
+    const el = host.querySelector(selector);
     if (el) {
       const box = el.getBoundingClientRect();
 

@@ -1,15 +1,15 @@
-import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef, signal, computed } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef, signal, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 import { MapComponent } from './core/map/map.component';
 import { Subject } from 'rxjs';
 import { InitiativeListComponent } from './core/initiative-list/initiative-list.component';
 import { ApiData } from './shared/models/api-data';
 import { DataService, deepMerge} from './shared/services/data.service';
 import { environment } from 'src/environments/environment';
-import { AppState, RunMode, ViewMode } from './shared/models/app-state';
+import { AppState, parseRunMode, parseViewMode, RunMode, ViewMode } from './shared/models/app-state';
 import { WSEventName, WSEvent } from './shared/models/wsevent';
 import { ControlState, TokenView } from './core/map/views/token-view';
 import { AreaEffect } from './shared/models/area-effect';
-import { Tile } from './shared/models/tile';
+import { Tile, tileLayer } from './shared/models/tile';
 import { ToolbarComponent, Tool, Panel, PanelChange, savedPanelState, savePanelState, MeasurementToolOptions, AreaTemplateToolOptions } from './core/toolbar/toolbar.component';
 import { ToastListComponent } from './core/toast-list/toast-list.component';
 import { ToastService } from './shared/services/toast.service';
@@ -22,7 +22,7 @@ import { MessageListComponent } from './core/message-list/message-list.component
 import { Token } from './shared/models/token';
 import { Light } from './shared/models/light';
 import { Sight } from './shared/models/sight';
-import { CacheManager } from './shared/utils';
+import { CacheManager, Utils } from './shared/utils';
 import { SharedVision } from './shared/models/screen';
 import { TrackedObject } from './shared/models/tracked-object';
 import { Measurement } from './shared/models/measurement';
@@ -31,7 +31,7 @@ import { Viewport } from 'pixi-viewport';
 import { ZoombarComponent } from './core/zoombar/zoombar.component';
 import { Meta } from '@angular/platform-browser';
 import { Message } from './shared/models/message';
-import { Game } from './shared/models/game';
+import { Game, emptyGame } from './shared/models/game';
 import { Screen } from './shared/models/screen';
 import { ActiveCombatant, Role } from './shared/models/combatant';
 import { PlayerEffect } from './shared/player-tools';
@@ -55,6 +55,7 @@ declare var appInterface: WebAppInterface;
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AppComponent implements OnInit, AfterViewInit {
@@ -79,7 +80,7 @@ export class AppComponent implements OnInit, AfterViewInit {
      this._messages.update((value) => messages);
   }
 
-  private readonly _game = signal<Game>(new Game())
+  private readonly _game = signal<Game>(emptyGame())
   readonly game = this._game.asReadonly()
 
   activeCombatants = computed(() => {
@@ -97,11 +98,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     }
     
-    return array.sort((a, b) => (a.initiative.order > b.initiative.order) ? 1 : -1);
+    return array.sort((a, b) => ((a.initiative.order ?? 0) > (b.initiative.order ?? 0)) ? 1 : -1);
   });
 
   // // initiativeId = signal<string | null>(null);
-  initiativeId? = computed(() => {
+  initiativeId = computed(() => {
     return this._game().initiativeId
   });
 
@@ -115,8 +116,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   // to display game paused animation
   paused = signal(false)
 
-  // for overlay images
-  screen = signal(new Screen())
+  // for overlay images; seeded from the state, which holds the default screen
+  screen: WritableSignal<Screen>
 
   updateScreen(screen: Screen) {
     // this.screen.update(state => deepMerge(state, screen));
@@ -124,25 +125,26 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   @ViewChild(MapComponent)
-  public mapComponent: MapComponent;
+  public mapComponent!: MapComponent;
 
   @ViewChild(InitiativeListComponent)
-  public initiativeListComponent: InitiativeListComponent;
+  public initiativeListComponent!: InitiativeListComponent;
 
   @ViewChild(MessageListComponent)
-  public messageListComponent: MessageListComponent;
+  public messageListComponent!: MessageListComponent;
 
   @ViewChild(ToolbarComponent)
-  public toolbarComponent: ToolbarComponent;
+  public toolbarComponent!: ToolbarComponent;
 
   @ViewChild(ZoombarComponent)
-  public zoombarComponent: ZoombarComponent;
+  public zoombarComponent!: ZoombarComponent;
 
   @ViewChild(ToastListComponent)
-  public toastListComponent: ToastListComponent;
+  public toastListComponent!: ToastListComponent;
 
   constructor(private metaService: Meta, private dataService: DataService, private toastService: ToastService, private modalService: NgbModal, private cdr: ChangeDetectorRef) {
     this.state = new AppState();
+    this.screen = signal(this.state.screen)
 
     window['state'] = this.state
     window['componentRef'] = {
@@ -151,7 +153,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     };
   }
 
-  handleExternalEvent(data) {
+  handleExternalEvent(data: WSEvent) {
     // console.log(JSON.stringify(data))
 
     // send to server
@@ -168,7 +170,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   showMessages: Boolean = false;
   showPlayerPanel: Boolean = false;
-  movingTokenView?: TokenView = null
+  movingTokenView: TokenView | null = null
 
   toolbarAction(type: string) {
     console.log(type);
@@ -181,12 +183,17 @@ export class AppComponent implements OnInit, AfterViewInit {
 
         let modal = this.modalService.open(SettingsModalComponent, {centered: true})
         modal.componentInstance.state = this.state
+        const playedVideoAssets = Loader.playsVideoAssets
         modal.result.then(result => {
           console.debug(`Settings component closed with: ${result}`);
 
           if (this.mapComponent) {
             // update maxFPS
             this.mapComponent.app.ticker.maxFPS = parseInt(localStorage.getItem("maxFPS") || "60") || 60;
+            // switch video assets between playing and a still frame
+            if (Loader.playsVideoAssets != playedVideoAssets) {
+              this.mapComponent.mapContainer.redrawVideoAssets()
+            }
             this.mapComponent.mapContainer.visionLayer.update()
             this.mapComponent.mapContainer.lightsLayer.update()
             this.mapComponent.mapContainer.visionLayer.draw()
@@ -242,7 +249,8 @@ export class AppComponent implements OnInit, AfterViewInit {
         break;
 
       case "focusToken":
-        let view = this.mapComponent.mapContainer.tokenViewById(localStorage.getItem("userTokenId"))
+        const userTokenId = localStorage.getItem("userTokenId")
+        let view = userTokenId ? this.mapComponent.mapContainer.tokenViewById(userTokenId) : null
         if (view) {
           this.mapComponent.viewport.animate({ position: view.position, scale: 1.0, time: 2000, ease: "easeInOutSine", removeOnInterrupt: true })
         }
@@ -425,13 +433,16 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       case WSEventName.mapFrameUpdated: {
 
+        const map = this.state.map
+        if (!map) break
+
         if (event.data.x && event.data.y) {
-          this.state.map.x = event.data.x
-          this.state.map.y = event.data.y
+          map.x = event.data.x
+          map.y = event.data.y
         }
 
         if (event.data.zoom) {
-          this.state.map.zoom = event.data.zoom
+          map.zoom = event.data.zoom
         }
 
         // skip this in normal mode
@@ -451,8 +462,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.viewport.setZoom(event.data.zoom)
 
           // fix center
-          const x = ((this.state.map.x ) + (this.mapComponent.mapContainer.w / 2))
-          const y = ((this.state.map.y ) + (this.mapComponent.mapContainer.h / 2))
+          const x = ((map.x ) + (this.mapComponent.mapContainer.w / 2))
+          const y = ((map.y ) + (this.mapComponent.mapContainer.h / 2))
           this.mapComponent.viewport.moveCenter(x, y)
           return
         }
@@ -488,9 +499,12 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.viewport.setZoom(scale)
 
           // set center
-          const x = ((this.state.map.x / this.state.map.zoom) + (this.mapComponent.mapContainer.w / 2))
-          const y = ((this.state.map.y / this.state.map.zoom) + (this.mapComponent.mapContainer.h / 2))
-          this.mapComponent.viewport.moveCenter(x, y)
+          const map = this.state.map
+          if (map) {
+            const x = ((map.x / map.zoom) + (this.mapComponent.mapContainer.w / 2))
+            const y = ((map.y / map.zoom) + (this.mapComponent.mapContainer.h / 2))
+            this.mapComponent.viewport.moveCenter(x, y)
+          }
         } else {
           this.mapComponent.viewport.fitWorld(true)
           this.mapComponent.viewport.moveCenter(this.mapComponent.mapContainer.w / 2, this.mapComponent.mapContainer.h / 2);
@@ -592,18 +606,19 @@ export class AppComponent implements OnInit, AfterViewInit {
         }
 
         if (event.data.polygon != null) {
-          let index = this.state.map.tokens.findIndex((obj => obj.id == event.data.id));
-          if (index !== undefined && index !== null) {
-            this.state.map.tokens[index].x = event.data.x;
-            this.state.map.tokens[index].y = event.data.y;
-            if (this.state.map.tokens[index].vision) {
-              this.state.map.tokens[index].vision.sight.x = event.data.x;
-              this.state.map.tokens[index].vision.sight.y = event.data.y;
-              this.state.map.tokens[index].vision.sight.polygon = event.data.polygon;
+          const token = this.state.map?.tokens.find(obj => obj.id == event.data.id);
+          if (token) {
+            token.x = event.data.x;
+            token.y = event.data.y;
+            const vision = token.vision
+            if (vision?.sight) {
+              vision.sight.x = event.data.x;
+              vision.sight.y = event.data.y;
+              vision.sight.polygon = event.data.polygon;
 
               // clear cache
-              CacheManager.sightPolygon.delete(this.state.map.tokens[index].vision.id)
-              CacheManager.geometryPolygon.delete(this.state.map.tokens[index].vision.id)
+              CacheManager.sightPolygon.delete(vision.id)
+              CacheManager.geometryPolygon.delete(vision.id)
             }
 
             this.mapComponent.mapContainer.visionLayer.draw();
@@ -614,11 +629,13 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.tokenUpdated: {
-        let model = Object.assign(new Token, event.data) as Token
+        let model = { ...event.data } as Token
 
         // udpdate state
-        let index = this.state.map.tokens.findIndex((obj => obj.id == model.id))
-        this.state.map.tokens[index] = model
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.tokens, model)
 
         let view = this.mapComponent.mapContainer.tokenViewById(model.id)
         if (view != null) {
@@ -647,12 +664,14 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.areaEffectUpdated: {
-        let model = Object.assign(new AreaEffect, event.data) as AreaEffect;
+        let model = event.data as AreaEffect;
         console.debug(model);
 
         // udpdate state
-        let index = this.state.map.areaEffects.findIndex((obj => obj.id == model.id));
-        this.state.map.areaEffects[index] = model;
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.areaEffects, model)
 
         let view = this.mapComponent.mapContainer.areaEffectViewById(model.id)
         if (view != null) {
@@ -663,12 +682,14 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.measurementUpdated: {
-        let model = Object.assign(new Measurement, event.data) as Measurement;
+        let model = event.data as Measurement;
         console.debug(model);
 
         // udpdate state
-        let index = this.state.map.measurements.findIndex((obj => obj.id == model.id));
-        this.state.map.measurements[index] = model;
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.measurements, model)
 
         let view = this.mapComponent.mapContainer.measurementViewById(model.id)
         if (view != null) {
@@ -679,15 +700,18 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.tileUpdated: {
-        let model = Object.assign(new Tile, event.data) as Tile;
+        let model = event.data as Tile;
         console.debug(model);
 
         // udpdate state
-        let index = this.state.map.tiles.findIndex((obj => obj.id == model.id));
-        this.state.map.tiles[index] = model;
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.tiles, model)
 
         let view = this.mapComponent.mapContainer.tileViewById(model.id)
-        if (view != null && view.mapLayer == model.layer) {
+        // the view resolves an absent layer to the default, so read the event the same way
+        if (view != null && view.mapLayer == tileLayer(model)) {
           // update tile only
           view.tile = model;
           view.draw();
@@ -708,12 +732,14 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.lightUpdated: {
-        let model = Object.assign(new Light, event.data) as Light
+        let model = { ...event.data } as Light
         console.debug(model)
 
         // udpdate state
-        let index = this.state.map.lights.findIndex((obj => obj.id == model.id))
-        this.state.map.lights[index] = model
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.lights, model)
 
         this.mapComponent.mapContainer.lightsLayer.update()
         this.mapComponent.mapContainer.visionLayer.update()
@@ -748,7 +774,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.drawingsUpdated: {
-        this.state.map.drawings = event.data;
+        const map = this.state.map
+        if (!map) break
+
+        map.drawings = event.data;
         this.mapComponent.mapContainer.drawingsLayer.update();
         this.mapComponent.mapContainer.drawingsLayer.draw()
         break;
@@ -765,12 +794,14 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.markerUpdated: {
-        let model = Object.assign(new Marker, event.data) as Marker;
+        let model = event.data as Marker;
         console.debug(model);
 
         // udpdate state
-        let index = this.state.map.markers.findIndex((obj => obj.id == model.id));
-        this.state.map.markers[index] = model;
+        const map = this.state.map
+        if (!map) break
+
+        Utils.upsertById(map.markers, model)
 
         let view = this.mapComponent.mapContainer.markerViewById(model.id)
         if (view != null) {
@@ -782,28 +813,40 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.markersUpdated: {
-        this.state.map.markers = event.data;
+        const map = this.state.map
+        if (!map) break
+
+        map.markers = event.data;
         this.mapComponent.mapContainer.markersLayer.update();
         this.mapComponent.mapContainer.markersLayer.draw()
         break;
       }
 
       case WSEventName.areaEffectsUpdated: {
-        this.state.map.areaEffects = event.data;
+        const map = this.state.map
+        if (!map) break
+
+        map.areaEffects = event.data;
         this.mapComponent.mapContainer.areaEffectsLayer.update();
         this.mapComponent.mapContainer.areaEffectsLayer.draw()
         break;
       }
 
       case WSEventName.measurementsUpdated: {
-        this.state.map.measurements = event.data;
+        const map = this.state.map
+        if (!map) break
+
+        map.measurements = event.data;
         this.mapComponent.mapContainer.measurementsLayer.update();
         this.mapComponent.mapContainer.measurementsLayer.draw()
         break;
       }
 
       case WSEventName.tilesUpdated: {
-        this.state.map.tiles = event.data
+        const map = this.state.map
+        if (!map) break
+
+        map.tiles = event.data
         this.mapComponent.mapContainer.updateTiles()
         this.mapComponent.mapContainer.drawTiles()
 
@@ -816,9 +859,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.lightsUpdated: {
-        this.state.map.lights = event.data
+        const map = this.state.map
+        if (!map) break
 
-        console.debug(this.state.map.lights)
+        map.lights = event.data
+
+        console.debug(map.lights)
 
         // update los & ligts
         this.mapComponent.mapContainer.lightsLayer.update()
@@ -829,7 +875,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
 
       case WSEventName.tokensUpdated: {
-        this.state.map.tokens = event.data
+        const map = this.state.map
+        if (!map) break
+
+        map.tokens = event.data
         this.mapComponent.mapContainer.updateTokens()
         this.mapComponent.mapContainer.drawTokens()
 
@@ -857,9 +906,12 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.viewport.setZoom(scale)
 
           // set center
-          const x = ((this.state.map.x / this.state.map.zoom) + (this.mapComponent.mapContainer.w / 2))
-          const y = ((this.state.map.y / this.state.map.zoom) + (this.mapComponent.mapContainer.h / 2))
-          this.mapComponent.viewport.moveCenter(x, y)
+          const map = this.state.map
+          if (map) {
+            const x = ((map.x / map.zoom) + (this.mapComponent.mapContainer.w / 2))
+            const y = ((map.y / map.zoom) + (this.mapComponent.mapContainer.h / 2))
+            this.mapComponent.viewport.moveCenter(x, y)
+          }
 
           this.mapComponent.notifyViewportUpdate()
         }
@@ -872,12 +924,16 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       case WSEventName.lineOfSightUpdated: {
         // console.log(event.data);
+        const map = this.state.map
+        if (!map) break
+
         for (let sight of event.data as Array<Sight>) {
           // search tokens
           if (sight.key.includes("vision-")) {
-            for (let token of this.state.map.tokens) {
-              if (token.vision?.sight?.key == sight.key) {
-                token.vision.sight = sight
+            for (let token of map.tokens) {
+              const vision = token.vision
+              if (vision && vision.sight?.key == sight.key) {
+                vision.sight = sight
                 break
               }
             }
@@ -885,14 +941,15 @@ export class AppComponent implements OnInit, AfterViewInit {
 
           // search tiles and lights
           if (sight.key.includes("light-")) {
-            for (let tile of this.state.map.tiles) {
-              if (tile.light?.sight?.key == sight.key || tile.light?.id == sight.key.slice(6)) {
-                tile.light.sight = sight
+            for (let tile of map.tiles) {
+              const light = tile.light
+              if (light && (light.sight?.key == sight.key || light.id == sight.key.slice(6))) {
+                light.sight = sight
                 break
               }
             }
 
-            for (let light of this.state.map.lights) {
+            for (let light of map.lights) {
               if (light.sight?.key == sight.key || light.id == sight.key.slice(6)) {
                 light.sight = sight
                 break
@@ -972,6 +1029,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           // update moving token view cache
           this.movingTokenView = view
         }
+
+        if (model.x == null || model.y == null) break
 
         // calculate center position relative to map
         const center = this.mapComponent.convertScreenToMap(model.x, model.y)
@@ -1071,8 +1130,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   configureParams() {
     let urlParams = new URLSearchParams(window.location.search);
     this.state.device = urlParams.get('device')
-    this.state.viewMode = ViewMode[urlParams.get('viewMode') || "player"] || ViewMode.player
-    this.state.runMode = RunMode[urlParams.get('runMode') || localStorage.getItem("runMode") || ""] || (this.state.device ? RunMode.tv : RunMode.normal)
+    this.state.viewMode = parseViewMode(urlParams.get('viewMode')) || ViewMode.player
+    this.state.runMode = parseRunMode(urlParams.get('runMode') || localStorage.getItem("runMode")) || (this.state.device ? RunMode.tv : RunMode.normal)
     this.state.allInteractions = urlParams.get('interactions') == "all"
 
     // device scale hack for gameboard
@@ -1086,23 +1145,17 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   get zoomControls(): boolean {
-    return this.state.map && this.state.runMode == RunMode.normal
+    return this.state.map != null && this.state.runMode == RunMode.normal
   }
 
   ngOnInit() {
-
-    // init user color
-    let color = localStorage.getItem("userColor");
-    if (!color) {
-      localStorage.setItem("userColor", '#' + (Math.random() * 0xFFFFFF << 0).toString(16));
-    }
 
     // update messages based on local storage settings
     this.showMessages = savedPanelState(Panel.messages);
     this.showPlayerPanel = savedPanelState(Panel.player);
 
     // update settings
-    this.state.userTokenId = localStorage.getItem("userTokenId")
+    this.state.userTokenId = localStorage.getItem("userTokenId") ?? undefined
 
     this.configureRemoteHost()
     this.configureParams()
@@ -1124,10 +1177,11 @@ export class AppComponent implements OnInit, AfterViewInit {
 
         // update color
         let name = localStorage.getItem("userName") || "Unknown";
-        let color = localStorage.getItem("userColor");
+        let color = Utils.userColor();
         this.dataService.send({ name: WSEventName.clientUpdated, data: { name: name, color: color, runMode: this.state.runMode, device: this.state.device, screenWidth: innerWidth, screenHeight: innerHeight } });
 
-        let readMessages = JSON.parse(localStorage.getItem("readMessages"));
+        const storedReadMessages = localStorage.getItem("readMessages");
+        let readMessages = storedReadMessages ? JSON.parse(storedReadMessages) : null;
         if (readMessages && readMessages.lastHost == this.dataService.remoteHost) {
           this.state.readCount = readMessages.seenCount;
         }

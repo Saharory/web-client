@@ -1,6 +1,6 @@
 import { AppState } from './models/app-state';
-import { Combatant } from './models/combatant';
-import { Role, Token } from './models/token';
+import { Role } from './models/token';
+import { minimalCombatant, minimalToken } from './models/testing/fixtures';
 import {
   assignedPlayerCombatant,
   assignedPlayerReference,
@@ -13,17 +13,17 @@ import {
 describe('player tools', () => {
   function buildState(role: Role = Role.friendly) {
     const state = new AppState();
-    const embedded = Object.assign(new Combatant(), {
+    const embedded = minimalCombatant({
       id: 'combatant-1',
       tokenId: 'token-1',
       reference: '/embedded-sheet',
     });
-    const live = Object.assign(new Combatant(), {
+    const live = minimalCombatant({
       id: 'combatant-1',
       tokenId: 'token-1',
       reference: '/live-sheet',
     });
-    const token = Object.assign(new Token(), {
+    const token = minimalToken({
       id: 'token-1',
       role,
       reference: '/token-sheet',
@@ -49,13 +49,13 @@ describe('player tools', () => {
   it('keeps the token sheet available before the character enters combat', () => {
     const { state } = buildState();
     state.game.combatants = [];
-    state.map.tokens[0].combatant = undefined;
+    state.map!.tokens[0].combatant = undefined;
     expect(assignedPlayerCombatant(state)).toBeUndefined();
     expect(assignedPlayerReference(state)).toBe('/token-sheet');
   });
 
   it('clamps HP while preserving the rest of combatant data', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       data: { hp: { current: 8, maximum: 12, temporary: 2, recovery: 7 }, note: 'keep' },
     });
@@ -65,7 +65,7 @@ describe('player tools', () => {
   });
 
   it('updates only the first initiative result and preserves its metadata', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       initiative: [
         { id: 'initiative-1', name: 'Perception', value: 10, order: 3 },
@@ -80,7 +80,7 @@ describe('player tools', () => {
   });
 
   it('does not turn a missing initiative value into zero', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       initiative: [{ id: 'initiative-1', value: null }],
     });
@@ -90,7 +90,7 @@ describe('player tools', () => {
   });
 
   it('creates the first initiative entry when Encounter+ has not created one yet', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       initiative: [],
     });
@@ -101,7 +101,7 @@ describe('player tools', () => {
   });
 
   it('normalizes valued and descriptive effects without inventing missing data', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       effects: [
         {
@@ -133,7 +133,7 @@ describe('player tools', () => {
   });
 
   it('accepts the alternate effect dictionary shape', () => {
-    const combatant = Object.assign(new Combatant(), {
+    const combatant = minimalCombatant({
       id: 'combatant-1',
       data: { effects: { hidden: { label: 'Invisible' } } },
     });

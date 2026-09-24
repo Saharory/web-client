@@ -1,13 +1,11 @@
 import { Asset } from './asset';
-import { Component } from './component';
 
-export class Aura {
+export interface Aura {
     id: string;
     enabled: boolean;
-    name: string;
+    name?: string;
     color: string;
     opacity: number;
     radius: number;
-    asset: Asset;
-    components: Array<Component> = [];
+    asset?: Asset;
 }

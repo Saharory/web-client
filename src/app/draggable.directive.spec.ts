@@ -1,8 +1,9 @@
+import { ElementRef } from '@angular/core';
 import { DraggableDirective } from './draggable.directive';
 
 describe('DraggableDirective', () => {
   it('should create an instance', () => {
-    const directive = new DraggableDirective({ nativeElement: document.createElement('div') } as any);
+    const directive = new DraggableDirective(new ElementRef(document.createElement('div')));
     expect(directive).toBeTruthy();
   });
 });

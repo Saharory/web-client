@@ -5,10 +5,11 @@ export enum MeasurementType {
     precise = "precise"
 }
 
-export class Measurement {
+export interface Measurement {
     id: string
-    type: MeasurementType = MeasurementType.grid
+    /** How the distance is measured; `precise` when the app leaves it out. */
+    type?: MeasurementType
     color: string
     hidden: boolean
-    data: Array<number> = [];
+    data: Array<number>;
 }

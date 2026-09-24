@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 import { Screen } from 'src/app/shared/models/screen';
 import { DataService } from 'src/app/shared/services/data.service';
 
@@ -6,15 +6,16 @@ import { DataService } from 'src/app/shared/services/data.service';
     selector: 'app-overlay',
     templateUrl: './overlay.component.html',
     styleUrls: ['./overlay.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OverlayComponent implements OnInit {
 
   @Input() 
-  public screen: Screen;
+  public screen!: Screen;
 
   get text(): string {
-      return (this.screen.overlayHandoutText || this.screen.overlayHandountText)
+      return this.screen.overlayHandoutText ?? ""
   }
 
   get style(): string {

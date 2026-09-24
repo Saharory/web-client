@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { EntityReferenceAction, entityFrameAction, rollCommand } from 'src/app/shared/entity-frame-interactions';
 import { Message, MessageType } from 'src/app/shared/models/message';
 import { WSEventName } from 'src/app/shared/models/wsevent';
@@ -8,6 +8,7 @@ import { DataService } from 'src/app/shared/services/data.service';
     selector: 'app-entity-modal',
     templateUrl: './entity-modal.component.html',
     styleUrls: ['./entity-modal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class EntityModalComponent implements OnChanges {
@@ -29,8 +30,8 @@ export class EntityModalComponent implements OnChanges {
   frameHeight = 280;
   frameLoading = true;
 
-  get url(): string | undefined {
-    return this.reference ? `${this.dataService.baseURL}${this.reference}` : undefined;
+  get url(): string {
+    return this.reference ? `${this.dataService.baseURL}${this.reference}` : '';
   }
 
   constructor(
@@ -104,11 +105,14 @@ export class EntityModalComponent implements OnChanges {
       return;
     }
 
-    const message = new Message();
-    message.source = localStorage.getItem('userName') || 'Unknown';
-    message.color = localStorage.getItem('userColor');
-    message.type = MessageType.command;
-    message.content = rollCommand(action);
+    const message: Message = {
+      id: '',
+      source: localStorage.getItem('userName') || 'Unknown',
+      color: localStorage.getItem('userColor') || undefined,
+      type: MessageType.command,
+      content: rollCommand(action),
+      created: new Date(),
+    };
     this.dataService.send({ name: WSEventName.createMessage, data: message });
   }
 }

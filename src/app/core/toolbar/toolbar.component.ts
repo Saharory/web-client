@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ElementRef, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, ElementRef, Output, EventEmitter, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { AppState } from 'src/app/shared/models/app-state';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from 'src/app/shared/services/data.service';
@@ -53,12 +53,13 @@ export function savePanelState(panel: Panel.messages | Panel.player, open: boole
     selector: 'app-toolbar',
     templateUrl: './toolbar.component.html',
     styleUrls: ['./toolbar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ToolbarComponent implements OnInit {
 
   @Input() 
-  public state: AppState;
+  public state!: AppState;
 
   @Input() 
   public unreadMessages = 0;
@@ -100,7 +101,7 @@ export class ToolbarComponent implements OnInit {
   videoPaused: boolean = false;
   videoMuted: boolean = true;
 
-  activeToolChanged(newTool) {
+  activeToolChanged(newTool: Tool) {
     this.tool.emit(newTool);
   }
 

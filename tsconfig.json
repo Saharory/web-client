@@ -1,7 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
+    "strict": true,
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
@@ -9,9 +9,13 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    // Replaces the deprecated "baseUrl", which these resolved through until TS 6.0.
     "paths": {
+      "src/*": [
+        "./src/*"
+      ],
       "mini-signals": [
-        "node_modules/mini-signals/index.js"
+        "./node_modules/mini-signals/index.js"
       ]
     },
     "module": "es2020",

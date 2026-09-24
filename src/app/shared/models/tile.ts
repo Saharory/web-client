@@ -1,22 +1,25 @@
 import { Light } from './light';
 import { Vision } from './vision';
 import { Asset } from './asset';
-import { Component } from './component';
 import { MapLayer } from './map';
 
-export class Tile {
+export interface Tile {
     id: string;
     x: number;
     y: number;
     width: number;
     height: number;
     rotation: number;
-    layer: MapLayer = MapLayer.object;
-    zIndex: null
+    layer?: MapLayer;
+    zIndex: number;
     opacity: number;
     scale: number;
     asset?: Asset;
     light?: Light;
-    components: Array<Component> = [];
-    hidden: boolean = false;
+    hidden: boolean;
+}
+
+/** The layer a tile sits on; the object layer when the app leaves it out. */
+export function tileLayer(tile: Tile): MapLayer {
+    return tile.layer ?? MapLayer.object
 }
