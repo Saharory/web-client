@@ -1,13 +1,251 @@
-:host {
-    color: var(--ui-text);
-    background-color: var(--ui-surface);
-    overflow-x: hidden;
-    overflow-y: scroll;
+$gameboard-margin: 75px;
+$message-width: 300px;
+$mobile-message-width: 260px;
+$dock-gap: 8px;
+$combatant-size: 130px;
+$mobile-combatant-size: 80px;
 
-    @media (max-width: 420px) {
-        width: 80px;
+:host {
+    position: absolute;
+    z-index: 1030;
+    display: block;
+    color: var(--ui-text);
+    pointer-events: none;
+}
+
+.initiative-dock-shell {
+    position: fixed;
+    pointer-events: auto;
+}
+
+.initiative-entries {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1px solid var(--ui-border);
+    border-radius: 0.45rem;
+    background-color: var(--ui-surface);
+    box-shadow: 0 0.35rem 1rem var(--ui-shadow);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
     }
 }
-:host(::-webkit-scrollbar) {
-    width: 0 !important
+
+.dock-right,
+.dock-left {
+    top: $dock-gap;
+    bottom: $dock-gap;
+    width: $combatant-size;
+}
+
+.dock-right {
+    right: $dock-gap;
+
+    &.messages-open {
+        right: calc(#{$dock-gap} + #{$message-width});
+    }
+}
+
+.dock-left {
+    left: $dock-gap;
+}
+
+.dock-bottom {
+    right: $dock-gap;
+    bottom: $dock-gap;
+    left: $dock-gap;
+    height: $combatant-size;
+
+    &.messages-open {
+        right: calc(#{$dock-gap} + #{$message-width});
+    }
+
+    .initiative-entries {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+}
+
+.initiative-dock-tab {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--ui-border);
+    border-radius: 0.45rem;
+    background: var(--ui-surface-solid);
+    box-shadow: 0 0.25rem 0.65rem var(--ui-shadow);
+}
+
+.dock-right .initiative-dock-tab {
+    top: 0;
+    right: 100%;
+    border-radius: 0.45rem 0 0 0.45rem;
+}
+
+.dock-left .initiative-dock-tab {
+    top: 0;
+    left: 100%;
+    border-radius: 0 0.45rem 0.45rem 0;
+}
+
+.dock-bottom .initiative-dock-tab {
+    bottom: 100%;
+    left: 0;
+    border-radius: 0.45rem 0.45rem 0 0;
+}
+
+.initiative-dock-grip,
+.initiative-dock-lock {
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    color: var(--ui-text-muted);
+    background: transparent;
+    line-height: 1;
+}
+
+.initiative-dock-grip {
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &:disabled {
+        cursor: default;
+        opacity: 0.38;
+    }
+}
+
+.initiative-dock-lock {
+    border-left: 1px solid var(--ui-border);
+    cursor: pointer;
+}
+
+.initiative-dock-grip:not(:disabled):hover,
+.initiative-dock-grip:not(:disabled):focus-visible,
+.initiative-dock-lock:hover,
+.initiative-dock-lock:focus-visible,
+.initiative-dock-lock[aria-pressed="true"] {
+    color: var(--ui-text);
+    background: var(--ui-control-hover);
+    outline: none;
+}
+
+.dock-dragging .initiative-dock-grip {
+    color: var(--ui-accent);
+    background: color-mix(in srgb, var(--ui-accent) 14%, transparent);
+}
+
+.initiative-dock-preview {
+    position: fixed;
+    z-index: 1029;
+    border: 2px solid var(--ui-accent);
+    border-radius: 0.55rem;
+    background: color-mix(in srgb, var(--ui-accent) 22%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-surface-solid) 55%, transparent),
+                0 0.45rem 1.2rem var(--ui-shadow);
+    pointer-events: none;
+}
+
+.preview-right,
+.preview-left {
+    top: $dock-gap;
+    bottom: $dock-gap;
+    width: $combatant-size;
+}
+
+.preview-right {
+    right: $dock-gap;
+
+    &.messages-open {
+        right: calc(#{$dock-gap} + #{$message-width});
+    }
+}
+
+.preview-left {
+    left: $dock-gap;
+}
+
+.preview-bottom {
+    right: $dock-gap;
+    bottom: $dock-gap;
+    left: $dock-gap;
+    height: $combatant-size;
+
+    &.messages-open {
+        right: calc(#{$dock-gap} + #{$message-width});
+    }
+}
+
+:host-context(.gameboard) {
+    .dock-right,
+    .preview-right {
+        right: $gameboard-margin;
+
+        &.messages-open {
+            right: calc(#{$gameboard-margin} + #{$message-width});
+        }
+    }
+
+    .dock-left,
+    .preview-left {
+        left: $gameboard-margin;
+    }
+
+    .dock-right,
+    .dock-left,
+    .preview-right,
+    .preview-left {
+        top: $gameboard-margin;
+        bottom: $gameboard-margin;
+    }
+
+    .dock-bottom,
+    .preview-bottom {
+        right: $gameboard-margin;
+        bottom: $gameboard-margin;
+        left: $gameboard-margin;
+
+        &.messages-open {
+            right: calc(#{$gameboard-margin} + #{$message-width});
+        }
+    }
+}
+
+@media (max-width: 420px) {
+    .dock-right,
+    .dock-left,
+    .preview-right,
+    .preview-left {
+        top: 56px;
+        width: $mobile-combatant-size;
+    }
+
+    .dock-bottom,
+    .preview-bottom {
+        height: $mobile-combatant-size;
+    }
+
+    .dock-right.messages-open,
+    .preview-right.messages-open {
+        right: calc(#{$dock-gap} + #{$mobile-message-width});
+    }
+
+    .dock-bottom.messages-open,
+    .preview-bottom.messages-open {
+        right: calc(#{$dock-gap} + #{$mobile-message-width});
+    }
 }

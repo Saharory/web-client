@@ -23,6 +23,7 @@ describe('InitiativeListComponent', () => {
   }
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       declarations: [ InitiativeListComponent, CombatantComponent ],
       providers: [
@@ -43,6 +44,85 @@ describe('InitiativeListComponent', () => {
 
   it('should render no combatants by default', () => {
     expect(fixture.nativeElement.querySelectorAll('app-combatant').length).toBe(0);
+  });
+
+  it('starts in the persisted dock position', () => {
+    fixture.destroy();
+    localStorage.setItem('initiativeDockPosition', 'left');
+    localStorage.setItem('initiativeDockLocked', 'true');
+
+    fixture = TestBed.createComponent(InitiativeListComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.dockPosition).toBe('left');
+    expect(component.dockLocked).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.initiative-dock-shell').classList).toContain('dock-left');
+  });
+
+  it('locks and unlocks repositioning without opening a menu', () => {
+    const event = jasmine.createSpyObj<Event>('event', ['preventDefault', 'stopPropagation']);
+
+    component.toggleDockLock(event);
+    expect(component.dockLocked).toBeTrue();
+    expect(localStorage.getItem('initiativeDockLocked')).toBe('true');
+
+    component.toggleDockLock(event);
+    expect(component.dockLocked).toBeFalse();
+    expect(localStorage.getItem('initiativeDockLocked')).toBe('false');
+  });
+
+  it('previews a destination without changing position until release', () => {
+    const handle = jasmine.createSpyObj<HTMLElement>('handle', ['setPointerCapture', 'hasPointerCapture', 'releasePointerCapture']);
+    handle.hasPointerCapture.and.returnValue(false);
+    const start = {
+      button: 0,
+      pointerId: 7,
+      currentTarget: handle,
+      preventDefault: jasmine.createSpy('preventDefault'),
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+    } as unknown as PointerEvent;
+    const move = {
+      pointerId: 7,
+      clientX: 0,
+      clientY: window.innerHeight / 2,
+      preventDefault: jasmine.createSpy('preventDefault'),
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+    } as unknown as PointerEvent;
+
+    component.beginDockDrag(start);
+    component.previewDock(move);
+
+    expect(component.dockPosition).toBe('right');
+    expect(component.dockPreview).toBe('left');
+
+    component.finishDockDrag(move);
+    expect(component.dockPosition).toBe('left');
+    expect(component.dockPreview).toBeUndefined();
+    expect(localStorage.getItem('initiativeDockPosition')).toBe('left');
+  });
+
+  it('cancels a drag released away from a supported edge', () => {
+    const handle = jasmine.createSpyObj<HTMLElement>('handle', ['setPointerCapture', 'hasPointerCapture', 'releasePointerCapture']);
+    handle.hasPointerCapture.and.returnValue(false);
+    const start = {
+      button: 0,
+      pointerId: 8,
+      currentTarget: handle,
+      preventDefault: jasmine.createSpy('preventDefault'),
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+    } as unknown as PointerEvent;
+    const release = {
+      pointerId: 8,
+      preventDefault: jasmine.createSpy('preventDefault'),
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+    } as unknown as PointerEvent;
+
+    component.beginDockDrag(start);
+    component.finishDockDrag(release);
+
+    expect(component.dockPosition).toBe('right');
+    expect(localStorage.getItem('initiativeDockPosition')).toBeNull();
   });
 
   describe('with combatants that carry only their required fields', () => {

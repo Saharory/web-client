@@ -168,8 +168,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
-  showMessages: Boolean = false;
-  showPlayerPanel: Boolean = false;
+  showMessages: boolean = false;
+  showPlayerPanel: boolean = false;
   movingTokenView: TokenView | null = null
 
   toolbarAction(type: string) {

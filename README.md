@@ -67,7 +67,7 @@ http://localhost:4200/?remoteHost=192.168.1.10:8080
 | `device` | e.g. `gameboard` | Marks a dedicated display device. `gameboard` also applies a 1.5× viewport scale. |
 | `interactions` | `all` | Enables every interaction, whatever the screen settings say. |
 
-User preferences (max FPS, video playback, name, selected token, open panel) are kept in `localStorage`.
+User preferences (max FPS, video playback, name, selected token, open panels, and initiative dock position) are kept in `localStorage`.
 
 ## Architecture
 

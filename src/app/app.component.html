@@ -34,10 +34,16 @@
     <app-zoombar id="zoombar" class="d-flex align-items-baseline" (action)="zoombarAction($event)" [state]="state"></app-zoombar>
   }
 
+  @if (this.game().started && this.activeCombatants().length > 0) {
+    <app-initiative-list
+      [initiativeId]="this.initiativeId()"
+      [activeCombatants]="this.activeCombatants()"
+      [messagesOpen]="showMessages"
+      id="initiative-list"
+    ></app-initiative-list>
+  }
+
   <div id="side-bar">
-    @if (this.game().started) {
-      <app-initiative-list [initiativeId]="this.initiativeId()" [activeCombatants]="this.activeCombatants()" id="initiative-list"></app-initiative-list>
-    }
     @if (showMessages) {
       <app-message-list [messages]="messages()" id="message-list"></app-message-list>
     }
