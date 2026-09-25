@@ -9,7 +9,7 @@
 
 import { EventEmitter, NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { EMPTY, Subject } from 'rxjs';
+import { EMPTY, of, Subject } from 'rxjs';
 import { AppComponent } from './app.component';
 import { AppState, RunMode } from './shared/models/app-state';
 import { DataService } from './shared/services/data.service';
@@ -20,6 +20,7 @@ import { Role } from './shared/models/token';
 import { mapComponentStub, modelViewStub, tileViewStub, tokenViewStub } from './core/map/testing/map-component-stub';
 import {
   minimalAreaEffect,
+  minimalApiData,
   minimalCombatant,
   minimalDrawing,
   minimalLight,
@@ -74,6 +75,29 @@ describe('AppComponent websocket events', () => {
   function send(name: WSEventName, data: any) {
     app.handleEvent({ name, data });
   }
+
+  it('rerenders an already-open player panel when the initial API data arrives', async () => {
+    const initialRevision = app.playerStateRevision();
+    app.state.userTokenId = 'token-1';
+
+    const service = TestBed.inject(DataService) as any;
+    service.getData.and.returnValue(of(minimalApiData({
+      map: minimalMap({
+        tokens: [minimalToken({ id: 'token-1', name: 'Mira', role: Role.friendly })],
+      }),
+      game: {
+        turn: 0,
+        round: 0,
+        started: false,
+        combatants: [minimalCombatant({ id: 'hero-1', tokenId: 'token-1', name: 'Mira' })],
+      },
+    })));
+
+    app.getData();
+
+    expect(app.state.map?.tokens[0].name).toBe('Mira');
+    expect(app.playerStateRevision()).toBe(initialRevision + 1);
+  });
 
   describe('systemPaused', () => {
 
@@ -178,8 +202,8 @@ describe('AppComponent websocket events', () => {
       expect(app.state.game.combatants).toEqual([]);
     });
 
-    it('refreshes an open player panel when effects change or the final effect is removed', () => {
-      const markForCheck = spyOn((app as any).cdr, 'markForCheck');
+    it('refreshes an open player panel when effects change or the final effect is removed', async () => {
+      const initialRevision = app.playerStateRevision();
       app.state.game.combatants = [minimalCombatant({
         id: 'hero-1',
         effects: [{ id: 'frightened', name: 'Frightened' }],
@@ -191,7 +215,7 @@ describe('AppComponent websocket events', () => {
       });
 
       expect(app.state.game.combatants[0].effects).toEqual([]);
-      expect(markForCheck).toHaveBeenCalled();
+      expect(app.playerStateRevision()).toBe(initialRevision + 1);
     });
   });
 
@@ -271,12 +295,12 @@ describe('AppComponent websocket events', () => {
       expect(container.lightsLayer.draw).toHaveBeenCalled();
     });
 
-    it('refreshes an open player panel when its assigned token changes', () => {
-      const markForCheck = spyOn((app as any).cdr, 'markForCheck');
+    it('refreshes an open player panel when its assigned token changes', async () => {
+      const initialRevision = app.playerStateRevision();
 
       send(WSEventName.tokenUpdated, minimalToken({ id: 'token-1' }));
 
-      expect(markForCheck).toHaveBeenCalled();
+      expect(app.playerStateRevision()).toBe(initialRevision + 1);
     });
 
     it('does nothing when there is no map', () => {

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef, signal, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, signal, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 import { MapComponent } from './core/map/map.component';
 import { Subject } from 'rxjs';
 import { InitiativeListComponent } from './core/initiative-list/initiative-list.component';
@@ -79,6 +79,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   private floatingWindowZ = 1061;
 
   readonly turnNotice = signal<TurnNoticeState | undefined>(undefined);
+  readonly playerStateRevision = signal(0);
   playerColor = Utils.userColor();
   initiativeDockPosition: InitiativeDockPosition = storedInitiativeDockPosition();
   private turnNoticeKey?: string;
@@ -137,6 +138,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.screen.set(screen)
   }
 
+  private refreshPlayerState(): void {
+    // The panel receives one long-lived AppState object. A primitive revision input tells Angular
+    // that its mutable contents changed, so zoneless rendering does not wait for user interaction.
+    this.playerStateRevision.update(revision => revision + 1)
+  }
+
   @ViewChild(MapComponent)
   public mapComponent!: MapComponent;
 
@@ -155,7 +162,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild(ToastListComponent)
   public toastListComponent!: ToastListComponent;
 
-  constructor(private metaService: Meta, private dataService: DataService, private toastService: ToastService, private modalService: NgbModal, private cdr: ChangeDetectorRef) {
+  constructor(private metaService: Meta, private dataService: DataService, private toastService: ToastService, private modalService: NgbModal) {
     this.state = new AppState();
     this.screen = signal(this.state.screen)
 
@@ -472,6 +479,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.mapContainer.lightsLayer.draw()
         }
 
+        this.refreshPlayerState()
+
         break;
       }
 
@@ -622,9 +631,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
         // update state
         this.updateGame(this.state.game)
-        // WebSocket callbacks run outside Angular's zoneless render scheduler. The combatant is
-        // intentionally updated in place, so explicitly refresh an already-open player panel.
-        this.cdr.markForCheck()
+        this.refreshPlayerState()
 
         // changes
         // console.debug(creature)
@@ -721,9 +728,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.mapContainer.lightsLayer.draw()
         }
 
-        // The assigned character can fall back to the combatant embedded in its token. Replacing
-        // that token must therefore refresh the player panel even when no Angular signal changed.
-        this.cdr.markForCheck()
+        // The assigned character can fall back to the combatant embedded in its token.
+        this.refreshPlayerState()
 
         // changes
         // console.debug(model)
@@ -1169,6 +1175,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       this.unreadMessages.set(this.state.messages.length - this.state.readCount)
       this.paused.set(this.state.paused)
+      this.refreshPlayerState()
 
     }, err => this.toastService.showError("API error: " + err));
   }

@@ -1,7 +1,10 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
 import { AppState } from 'src/app/shared/models/app-state';
 import { Role } from 'src/app/shared/models/token';
 import { minimalCombatant, minimalToken } from 'src/app/shared/models/testing/fixtures';
 import { WSEventName } from 'src/app/shared/models/wsevent';
+import { DataService } from 'src/app/shared/services/data.service';
 import { PlayerPanelComponent } from './player-panel.component';
 
 describe('PlayerPanelComponent', () => {
@@ -103,5 +106,52 @@ describe('PlayerPanelComponent', () => {
     expect(event.data.initiative.length).toBe(1);
     expect(event.data.initiative[0].value).toBe(15);
     expect(event.data.initiative[0].id).toBeTruthy();
+  });
+});
+
+describe('PlayerPanelComponent live rendering', () => {
+  let fixture: ComponentFixture<PlayerPanelComponent>;
+  let component: PlayerPanelComponent;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [PlayerPanelComponent],
+      imports: [FormsModule],
+      providers: [{
+        provide: DataService,
+        useValue: { baseURL: 'http://localhost', send: jasmine.createSpy('send') },
+      }],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PlayerPanelComponent);
+    component = fixture.componentInstance;
+  });
+
+  it('replaces the empty state and clears the final effect whenever its parent refreshes', () => {
+    const state = new AppState();
+    state.userTokenId = 'token-1';
+    state.map = { tokens: [] } as any;
+    component.state = state;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Choose your friendly character token');
+
+    state.map = {
+      tokens: [minimalToken({ id: 'token-1', name: 'Mira', role: Role.friendly })],
+    } as any;
+    state.game.combatants = [minimalCombatant({
+      id: 'hero-1',
+      tokenId: 'token-1',
+      name: 'Mira',
+      effects: [{ id: 'frightened', name: 'Frightened' }],
+    })];
+    fixture.componentRef.setInput('stateRevision', 1);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.player-header')?.textContent).toContain('Mira');
+    expect(fixture.nativeElement.querySelector('.effect-section')?.textContent).toContain('Frightened');
+
+    state.game.combatants[0].effects = [];
+    fixture.componentRef.setInput('stateRevision', 2);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.effect-section')).toBeNull();
   });
 });

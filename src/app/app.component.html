@@ -8,7 +8,7 @@
   <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)" (areaTemplateOptions)="areaTemplateToolOptionsChanged($event)" (clearAreaTemplate)="clearAreaTemplatePreview()"></app-toolbar>
 
   @if (showPlayerPanel) {
-    <app-player-panel [state]="state" (closePanel)="closePlayerPanel()" (showSheet)="showCharacterSheet($event)" (showEffect)="showEffectAction($event)"></app-player-panel>
+    <app-player-panel [state]="state" [stateRevision]="playerStateRevision()" (closePanel)="closePlayerPanel()" (showSheet)="showCharacterSheet($event)" (showEffect)="showEffectAction($event)"></app-player-panel>
   }
 
   @if (characterWindow) {
