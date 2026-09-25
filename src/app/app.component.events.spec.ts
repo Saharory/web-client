@@ -16,6 +16,7 @@ import { DataService } from './shared/services/data.service';
 import { WSEvent, WSEventName } from './shared/models/wsevent';
 import { MapLayer } from './shared/models/map';
 import { ControlState } from './core/map/views/token-view';
+import { Role } from './shared/models/token';
 import { mapComponentStub, modelViewStub, tileViewStub, tokenViewStub } from './core/map/testing/map-component-stub';
 import {
   minimalAreaEffect,
@@ -120,6 +121,45 @@ describe('AppComponent websocket events', () => {
 
     it('survives a game with no combatants at all', () => {
       expect(() => send(WSEventName.gameUpdated, {})).not.toThrow();
+    });
+
+    it('announces the assigned character when their turn begins', () => {
+      app.state.userTokenId = 'token-1';
+      app.state.map = minimalMap({
+        tokens: [minimalToken({ id: 'token-1', role: Role.friendly })],
+      });
+      app.state.game.combatants = [minimalCombatant({
+        id: 'hero-1',
+        tokenId: 'token-1',
+        label: 'Mira',
+      })];
+
+      send(WSEventName.gameUpdated, {
+        started: true,
+        turn: 1,
+        round: 2,
+        combatantId: 'hero-1',
+      });
+
+      expect(app.turnNotice()).toEqual({
+        combatantId: 'hero-1',
+        name: 'Mira',
+        round: 2,
+      });
+    });
+
+    it('clears the turn notice when play moves to another combatant', () => {
+      app.state.userTokenId = 'token-1';
+      app.state.map = minimalMap({
+        tokens: [minimalToken({ id: 'token-1', role: Role.friendly })],
+      });
+      app.state.game.combatants = [minimalCombatant({ id: 'hero-1', tokenId: 'token-1' })];
+
+      send(WSEventName.gameUpdated, { started: true, turn: 1, round: 1, combatantId: 'hero-1' });
+      expect(app.turnNotice()).toBeDefined();
+
+      send(WSEventName.gameUpdated, { turn: 2, combatantId: 'enemy-1' });
+      expect(app.turnNotice()).toBeUndefined();
     });
   });
 

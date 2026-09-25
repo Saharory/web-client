@@ -30,6 +30,22 @@
     </section>
   }
 
+  @if (turnNotice(); as notice) {
+    <section
+      class="turn-notice"
+      role="status"
+      aria-live="assertive"
+      [style.--player-color]="playerColor"
+    >
+      <span class="turn-notice-marker" aria-hidden="true"></span>
+      <span class="turn-notice-copy">
+        <strong>Your turn</strong>
+        <span>{{ notice.name }}@if (notice.round) { · Round {{ notice.round }}}</span>
+      </span>
+      <button type="button" class="turn-notice-close" aria-label="Dismiss turn notification" (click)="dismissTurnNotice()">×</button>
+    </section>
+  }
+
   @if (zoomControls) {
     <app-zoombar id="zoombar" class="d-flex align-items-baseline" (action)="zoombarAction($event)" [state]="state"></app-zoombar>
   }

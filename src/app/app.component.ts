@@ -34,13 +34,19 @@ import { Message } from './shared/models/message';
 import { Game, emptyGame } from './shared/models/game';
 import { Screen } from './shared/models/screen';
 import { ActiveCombatant, Role } from './shared/models/combatant';
-import { PlayerEffect } from './shared/player-tools';
+import { PlayerEffect, assignedPlayerCombatant } from './shared/player-tools';
 import { EntityReferenceAction } from './shared/entity-frame-interactions';
 
 interface EntityWindowState {
   title: string;
   reference?: string;
   description?: string;
+}
+
+interface TurnNoticeState {
+  combatantId: string;
+  name: string;
+  round?: number;
 }
 
 interface WebAppInterface {
@@ -70,6 +76,11 @@ export class AppComponent implements OnInit, AfterViewInit {
   characterWindowZ = 1060;
   referenceWindowZ = 1061;
   private floatingWindowZ = 1061;
+
+  readonly turnNotice = signal<TurnNoticeState | undefined>(undefined);
+  playerColor = Utils.userColor();
+  private turnNoticeKey?: string;
+  private turnNoticeTimer?: ReturnType<typeof setTimeout>;
 
   destroy$: Subject<boolean> = new Subject<boolean>();
 
@@ -207,6 +218,9 @@ export class AppComponent implements OnInit, AfterViewInit {
           if (typeof appInterface !== "undefined") {
             appInterface.showText("Settings changed")
           }
+
+          this.playerColor = Utils.userColor();
+          this.updateTurnNotice();
 
         }, reason => {
           console.debug(`Setting component dismissed ${reason}`)
@@ -346,6 +360,45 @@ export class AppComponent implements OnInit, AfterViewInit {
     else this.referenceWindowZ = this.floatingWindowZ;
   }
 
+  dismissTurnNotice() {
+    this.turnNotice.set(undefined);
+    if (this.turnNoticeTimer) {
+      clearTimeout(this.turnNoticeTimer);
+      this.turnNoticeTimer = undefined;
+    }
+  }
+
+  private updateTurnNotice() {
+    const combatant = assignedPlayerCombatant(this.state);
+    const isPlayersTurn = Boolean(
+      this.state.game.started &&
+      combatant &&
+      this.state.game.combatantId === combatant.id
+    );
+
+    if (!isPlayersTurn || !combatant) {
+      this.turnNoticeKey = undefined;
+      this.dismissTurnNotice();
+      return;
+    }
+
+    const key = `${combatant.id}:${this.state.game.round}:${this.state.game.turn}`;
+    if (key === this.turnNoticeKey) return;
+
+    this.turnNoticeKey = key;
+    this.turnNotice.set({
+      combatantId: combatant.id,
+      name: combatant.label || combatant.name || 'Your character',
+      round: this.state.game.round || undefined,
+    });
+
+    if (this.turnNoticeTimer) clearTimeout(this.turnNoticeTimer);
+    this.turnNoticeTimer = setTimeout(() => {
+      this.turnNotice.set(undefined);
+      this.turnNoticeTimer = undefined;
+    }, 7000);
+  }
+
   // main websocket event handler
   handleEvent(event: WSEvent) {
     // console.debug(`Event received: ${event.name}`)
@@ -391,6 +444,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         
         // update state
         this.updateGame(this.state.game)
+        this.updateTurnNotice()
 
         if (this.initiativeListComponent) {
           this.initiativeListComponent.scrollToTurned(this.state.game.initiativeId)
@@ -1096,6 +1150,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
       
       this.updateGame(this.state.game)
+      this.updateTurnNotice()
       this.updateScreen(this.state.screen)
       this.updateMessages([...this.state.messages])
 
@@ -1209,6 +1264,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngOnDestroy() {
+    this.dismissTurnNotice();
     this.destroy$.next(true);
     // Unsubscribe from the subject
     this.destroy$.unsubscribe();
