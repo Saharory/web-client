@@ -1,4 +1,9 @@
-<div id="app" class="h-100 d-flex flex-column {{state.device}}" appDisableRightClick>
+<div
+  id="app"
+  class="h-100 d-flex flex-column {{state.device}}"
+  [class.initiative-bottom]="this.game().started && this.activeCombatants().length > 0 && initiativeDockPosition === 'bottom'"
+  appDisableRightClick
+>
   <app-map [state]="state" class="h-100"></app-map>
   <app-toolbar id="toolbar" [state]="state" [unreadMessages]="this.unreadMessages()" (action)="toolbarAction($event)" (panel)="activePanelAction($event)" (tool)="activeToolAction($event)" (measurementOptions)="measurementToolOptionsChanged($event)" (areaTemplateOptions)="areaTemplateToolOptionsChanged($event)" (clearAreaTemplate)="clearAreaTemplatePreview()"></app-toolbar>
 
@@ -55,6 +60,7 @@
       [initiativeId]="this.initiativeId()"
       [activeCombatants]="this.activeCombatants()"
       [messagesOpen]="showMessages"
+      (dockPositionChange)="initiativeDockPositionChanged($event)"
       id="initiative-list"
     ></app-initiative-list>
   }

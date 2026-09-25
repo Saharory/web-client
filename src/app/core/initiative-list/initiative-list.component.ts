@@ -1,16 +1,12 @@
-import { Component, OnInit, Input, ElementRef, AfterViewChecked, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { AppState } from 'src/app/shared/models/app-state';
-import { ActiveCombatant, Combatant, Role } from 'src/app/shared/models/combatant';
-import { Game } from 'src/app/shared/models/game';
-import { Initiative } from 'src/app/shared/models/initiative';
+import { Component, Input, Output, EventEmitter, ElementRef, AfterViewChecked, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ActiveCombatant } from 'src/app/shared/models/combatant';
 // import { Lightbox, IAlbum } from 'ngx-lightbox';
 import { DataService } from 'src/app/shared/services/data.service';
 import { LightboxService } from '../lightbox/lightbox.service';
 import {
   InitiativeDockPosition,
-  initiativeDockTarget,
+  nextInitiativeDockPosition,
   saveInitiativeDock,
-  storedInitiativeDockLocked,
   storedInitiativeDockPosition,
 } from './initiative-dock';
 
@@ -21,7 +17,7 @@ import {
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
-export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChecked, AfterViewInit {
+export class InitiativeListComponent implements OnDestroy, AfterViewChecked, AfterViewInit {
   static el: HTMLElement | undefined;
 
   // @Input()
@@ -36,18 +32,12 @@ export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChec
   @Input()
   messagesOpen = false;
 
-  dockPosition: InitiativeDockPosition = storedInitiativeDockPosition();
-  dockLocked = storedInitiativeDockLocked();
-  dockPreview?: InitiativeDockPosition;
-  dockDragging = false;
+  @Output()
+  dockPositionChange = new EventEmitter<InitiativeDockPosition>();
 
-  private dockPointerId?: number;
-  private dockHandle?: HTMLElement;
+  dockPosition: InitiativeDockPosition = storedInitiativeDockPosition();
 
   constructor(private element: ElementRef, private lightboxService: LightboxService, private dataService: DataService) {
-  }
-
-  ngOnInit(): void {
   }
 
   ngAfterViewChecked(): void {
@@ -61,8 +51,6 @@ export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChec
   }
 
   ngOnDestroy(): void {
-    this.releaseDockPointer();
-    this.resetDockDrag();
     InitiativeListComponent.el = undefined;
     window.dispatchEvent(new Event('resize'));
   }
@@ -93,77 +81,13 @@ export class InitiativeListComponent implements OnInit, OnDestroy, AfterViewChec
     }
   }
 
-  beginDockDrag(event: PointerEvent): void {
-    if (this.dockLocked || event.button !== 0) return;
-
-    this.dockDragging = true;
-    this.dockPreview = undefined;
-    this.dockPointerId = event.pointerId;
-    this.dockHandle = event.currentTarget as HTMLElement;
-    this.dockHandle.setPointerCapture?.(event.pointerId);
+  toggleDockPosition(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
-  }
-
-  previewDock(event: PointerEvent): void {
-    if (!this.dockDragging || event.pointerId !== this.dockPointerId) return;
-
-    this.dockPreview = initiativeDockTarget(
-      event.clientX,
-      event.clientY,
-      window.innerWidth,
-      window.innerHeight,
-    );
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  finishDockDrag(event: PointerEvent): void {
-    if (!this.dockDragging || event.pointerId !== this.dockPointerId) return;
-
-    if (this.dockPreview) {
-      this.dockPosition = this.dockPreview;
-      saveInitiativeDock(this.dockPosition, this.dockLocked);
-      window.dispatchEvent(new Event('resize'));
-    }
-    this.endDockDrag(event);
-  }
-
-  cancelDockDrag(event: PointerEvent): void {
-    if (!this.dockDragging || event.pointerId !== this.dockPointerId) return;
-    this.endDockDrag(event);
-  }
-
-  toggleDockLock(event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.dockLocked = !this.dockLocked;
-    saveInitiativeDock(this.dockPosition, this.dockLocked);
-
-    if (this.dockLocked) {
-      this.releaseDockPointer();
-      this.resetDockDrag();
-    }
-  }
-
-  private endDockDrag(event: PointerEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.releaseDockPointer();
-    this.resetDockDrag();
-  }
-
-  private releaseDockPointer(): void {
-    if (this.dockHandle && this.dockPointerId != null && this.dockHandle.hasPointerCapture?.(this.dockPointerId)) {
-      this.dockHandle.releasePointerCapture(this.dockPointerId);
-    }
-  }
-
-  private resetDockDrag(): void {
-    this.dockDragging = false;
-    this.dockPreview = undefined;
-    this.dockPointerId = undefined;
-    this.dockHandle = undefined;
+    this.dockPosition = nextInitiativeDockPosition(this.dockPosition);
+    saveInitiativeDock(this.dockPosition);
+    this.dockPositionChange.emit(this.dockPosition);
+    window.dispatchEvent(new Event('resize'));
   }
 
   private getImage(index: number): string {

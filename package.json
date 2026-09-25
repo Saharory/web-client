@@ -1,6 +1,6 @@
 {
   "name": "web-client",
-  "version": "0.9.17.3",
+  "version": "0.9.17.4",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

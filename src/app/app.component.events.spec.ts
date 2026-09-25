@@ -131,7 +131,8 @@ describe('AppComponent websocket events', () => {
       app.state.game.combatants = [minimalCombatant({
         id: 'hero-1',
         tokenId: 'token-1',
-        label: 'Mira',
+        name: 'Mira',
+        label: 'G',
       })];
 
       send(WSEventName.gameUpdated, {

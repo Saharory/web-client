@@ -35,23 +35,15 @@ $mobile-combatant-size: 80px;
     }
 }
 
-.dock-right,
-.dock-left {
+.dock-right {
     top: $dock-gap;
+    right: $dock-gap;
     bottom: $dock-gap;
     width: $combatant-size;
-}
-
-.dock-right {
-    right: $dock-gap;
 
     &.messages-open {
         right: calc(#{$dock-gap} + #{$message-width});
     }
-}
-
-.dock-left {
-    left: $dock-gap;
 }
 
 .dock-bottom {
@@ -72,127 +64,56 @@ $mobile-combatant-size: 80px;
     }
 }
 
-.initiative-dock-tab {
+.initiative-dock-toggle {
     position: absolute;
     z-index: 2;
-    display: flex;
-    overflow: hidden;
+    display: inline-flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--ui-text-muted);
     border: 1px solid var(--ui-border);
-    border-radius: 0.45rem;
+    border-radius: 0.4rem;
     background: var(--ui-surface-solid);
     box-shadow: 0 0.25rem 0.65rem var(--ui-shadow);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--ui-text);
+        background: var(--ui-control-hover);
+        outline: none;
+    }
 }
 
-.dock-right .initiative-dock-tab {
-    top: 0;
+.dock-right .initiative-dock-toggle {
+    top: 2.6rem;
     right: 100%;
     border-radius: 0.45rem 0 0 0.45rem;
 }
 
-.dock-left .initiative-dock-tab {
-    top: 0;
-    left: 100%;
-    border-radius: 0 0.45rem 0.45rem 0;
-}
-
-.dock-bottom .initiative-dock-tab {
+.dock-bottom .initiative-dock-toggle {
     bottom: 100%;
-    left: 0;
+    right: 2.6rem;
     border-radius: 0.45rem 0.45rem 0 0;
 }
 
-.initiative-dock-grip,
-.initiative-dock-lock {
-    display: inline-flex;
-    width: 2rem;
-    height: 2rem;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    color: var(--ui-text-muted);
-    background: transparent;
-    line-height: 1;
+.initiative-dock-toggle-shape {
+    width: 1.15rem;
+    height: 0.36rem;
+    border: 2px solid currentColor;
+    border-radius: 0.12rem;
 }
 
-.initiative-dock-grip {
-    cursor: grab;
-    touch-action: none;
-
-    &:active {
-        cursor: grabbing;
-    }
-
-    &:disabled {
-        cursor: default;
-        opacity: 0.38;
-    }
-}
-
-.initiative-dock-lock {
-    border-left: 1px solid var(--ui-border);
-    cursor: pointer;
-}
-
-.initiative-dock-grip:not(:disabled):hover,
-.initiative-dock-grip:not(:disabled):focus-visible,
-.initiative-dock-lock:hover,
-.initiative-dock-lock:focus-visible,
-.initiative-dock-lock[aria-pressed="true"] {
-    color: var(--ui-text);
-    background: var(--ui-control-hover);
-    outline: none;
-}
-
-.dock-dragging .initiative-dock-grip {
-    color: var(--ui-accent);
-    background: color-mix(in srgb, var(--ui-accent) 14%, transparent);
-}
-
-.initiative-dock-preview {
-    position: fixed;
-    z-index: 1029;
-    border: 2px solid var(--ui-accent);
-    border-radius: 0.55rem;
-    background: color-mix(in srgb, var(--ui-accent) 22%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-surface-solid) 55%, transparent),
-                0 0.45rem 1.2rem var(--ui-shadow);
-    pointer-events: none;
-}
-
-.preview-right,
-.preview-left {
-    top: $dock-gap;
-    bottom: $dock-gap;
-    width: $combatant-size;
-}
-
-.preview-right {
-    right: $dock-gap;
-
-    &.messages-open {
-        right: calc(#{$dock-gap} + #{$message-width});
-    }
-}
-
-.preview-left {
-    left: $dock-gap;
-}
-
-.preview-bottom {
-    right: $dock-gap;
-    bottom: $dock-gap;
-    left: $dock-gap;
-    height: $combatant-size;
-
-    &.messages-open {
-        right: calc(#{$dock-gap} + #{$message-width});
-    }
+.dock-bottom .initiative-dock-toggle-shape {
+    width: 0.36rem;
+    height: 1.15rem;
 }
 
 :host-context(.gameboard) {
-    .dock-right,
-    .preview-right {
+    .dock-right {
         right: $gameboard-margin;
 
         &.messages-open {
@@ -200,21 +121,12 @@ $mobile-combatant-size: 80px;
         }
     }
 
-    .dock-left,
-    .preview-left {
-        left: $gameboard-margin;
-    }
-
-    .dock-right,
-    .dock-left,
-    .preview-right,
-    .preview-left {
+    .dock-right {
         top: $gameboard-margin;
         bottom: $gameboard-margin;
     }
 
-    .dock-bottom,
-    .preview-bottom {
+    .dock-bottom {
         right: $gameboard-margin;
         bottom: $gameboard-margin;
         left: $gameboard-margin;
@@ -226,26 +138,20 @@ $mobile-combatant-size: 80px;
 }
 
 @media (max-width: 420px) {
-    .dock-right,
-    .dock-left,
-    .preview-right,
-    .preview-left {
+    .dock-right {
         top: 56px;
         width: $mobile-combatant-size;
     }
 
-    .dock-bottom,
-    .preview-bottom {
+    .dock-bottom {
         height: $mobile-combatant-size;
     }
 
-    .dock-right.messages-open,
-    .preview-right.messages-open {
+    .dock-right.messages-open {
         right: calc(#{$dock-gap} + #{$mobile-message-width});
     }
 
-    .dock-bottom.messages-open,
-    .preview-bottom.messages-open {
+    .dock-bottom.messages-open {
         right: calc(#{$dock-gap} + #{$mobile-message-width});
     }
 }

@@ -1,42 +1,20 @@
 <div
   class="initiative-dock-shell dock-{{dockPosition}}"
   [class.messages-open]="messagesOpen"
-  [class.dock-dragging]="dockDragging"
-  [class.dock-locked]="dockLocked"
 >
-  <div class="initiative-dock-tab">
-    <button
-      type="button"
-      class="initiative-dock-grip"
-      [disabled]="dockLocked"
-      aria-label="Move initiative order"
-      [title]="dockLocked ? 'Unlock the initiative position to move it' : 'Drag to move initiative order'"
-      (pointerdown)="beginDockDrag($event)"
-      (pointermove)="previewDock($event)"
-      (pointerup)="finishDockDrag($event)"
-      (pointercancel)="cancelDockDrag($event)"
-    >
-      <i class="fa fa-arrows" aria-hidden="true"></i>
-    </button>
-    <button
-      type="button"
-      class="initiative-dock-lock"
-      [attr.aria-pressed]="dockLocked"
-      [attr.aria-label]="dockLocked ? 'Unlock initiative position' : 'Lock initiative position'"
-      [title]="dockLocked ? 'Unlock initiative position' : 'Lock initiative position'"
-      (click)="toggleDockLock($event)"
-    >
-      <i class="fa" [class.fa-lock]="dockLocked" [class.fa-unlock-alt]="!dockLocked" aria-hidden="true"></i>
-    </button>
-  </div>
+  <button
+    type="button"
+    class="initiative-dock-toggle"
+    [attr.aria-label]="dockPosition === 'right' ? 'Move initiative order to bottom' : 'Move initiative order to right'"
+    [title]="dockPosition === 'right' ? 'Move initiative order to bottom' : 'Move initiative order to right'"
+    (click)="toggleDockPosition($event)"
+  >
+    <span class="initiative-dock-toggle-shape" aria-hidden="true"></span>
+  </button>
 
   <div class="initiative-entries">
     @for (activeCombatant of activeCombatants; track activeCombatant.id; let i = $index) {
       <app-combatant [combatant]="activeCombatant.combatant" [attr.data-id]="activeCombatant.initiative.id" [class.combatant-turned]="activeCombatant.turned" class="combatant role-{{activeCombatant.combatant.role}} d-flex align-items-stretch" (click)="open(i)"></app-combatant>
     }
   </div>
-
-  @if (dockDragging && dockPreview) {
-    <div class="initiative-dock-preview preview-{{dockPreview}}" [class.messages-open]="messagesOpen" aria-hidden="true"></div>
-  }
 </div>

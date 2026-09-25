@@ -36,6 +36,7 @@ import { Screen } from './shared/models/screen';
 import { ActiveCombatant, Role } from './shared/models/combatant';
 import { PlayerEffect, assignedPlayerCombatant } from './shared/player-tools';
 import { EntityReferenceAction } from './shared/entity-frame-interactions';
+import { InitiativeDockPosition, storedInitiativeDockPosition } from './core/initiative-list/initiative-dock';
 
 interface EntityWindowState {
   title: string;
@@ -79,6 +80,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   readonly turnNotice = signal<TurnNoticeState | undefined>(undefined);
   playerColor = Utils.userColor();
+  initiativeDockPosition: InitiativeDockPosition = storedInitiativeDockPosition();
   private turnNoticeKey?: string;
   private turnNoticeTimer?: ReturnType<typeof setTimeout>;
 
@@ -368,6 +370,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
+  initiativeDockPositionChanged(position: InitiativeDockPosition) {
+    this.initiativeDockPosition = position;
+  }
+
   private updateTurnNotice() {
     const combatant = assignedPlayerCombatant(this.state);
     const isPlayersTurn = Boolean(
@@ -388,7 +394,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.turnNoticeKey = key;
     this.turnNotice.set({
       combatantId: combatant.id,
-      name: combatant.label || combatant.name || 'Your character',
+      name: combatant.name || combatant.label || 'Your character',
       round: this.state.game.round || undefined,
     });
 
