@@ -177,6 +177,22 @@ describe('AppComponent websocket events', () => {
       expect(() => send(WSEventName.combatantUpdated, { id: "z", bloodied: true })).not.toThrow();
       expect(app.state.game.combatants).toEqual([]);
     });
+
+    it('refreshes an open player panel when effects change or the final effect is removed', () => {
+      const markForCheck = spyOn((app as any).cdr, 'markForCheck');
+      app.state.game.combatants = [minimalCombatant({
+        id: 'hero-1',
+        effects: [{ id: 'frightened', name: 'Frightened' }],
+      })];
+
+      send(WSEventName.combatantUpdated, {
+        id: 'hero-1',
+        effects: [],
+      });
+
+      expect(app.state.game.combatants[0].effects).toEqual([]);
+      expect(markForCheck).toHaveBeenCalled();
+    });
   });
 
   describe('mapUpdated', () => {
@@ -253,6 +269,14 @@ describe('AppComponent websocket events', () => {
       send(WSEventName.tokenUpdated, minimalToken({ vision: minimalVision() }));
       expect(container.visionLayer.draw).toHaveBeenCalled();
       expect(container.lightsLayer.draw).toHaveBeenCalled();
+    });
+
+    it('refreshes an open player panel when its assigned token changes', () => {
+      const markForCheck = spyOn((app as any).cdr, 'markForCheck');
+
+      send(WSEventName.tokenUpdated, minimalToken({ id: 'token-1' }));
+
+      expect(markForCheck).toHaveBeenCalled();
     });
 
     it('does nothing when there is no map', () => {

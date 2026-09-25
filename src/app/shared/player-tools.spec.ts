@@ -139,4 +139,18 @@ describe('player tools', () => {
     });
     expect(playerEffects(combatant).map(effect => effect.name)).toEqual(['Invisible']);
   });
+
+  it('does not revive nested effects after the server explicitly clears the top-level field', () => {
+    const staleNestedEffect = { hidden: { label: 'Invisible' } };
+
+    expect(playerEffects(minimalCombatant({
+      effects: null,
+      data: { effects: staleNestedEffect },
+    }))).toEqual([]);
+
+    expect(playerEffects(minimalCombatant({
+      effects: [],
+      data: { effects: staleNestedEffect },
+    }))).toEqual([]);
+  });
 });

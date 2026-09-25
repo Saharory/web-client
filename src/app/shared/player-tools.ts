@@ -33,7 +33,12 @@ function effectColor(value: unknown): string | undefined {
 }
 
 export function playerEffects(combatant?: Combatant): PlayerEffect[] {
-  const source = combatant?.effects ?? combatant?.data?.effects;
+  // An explicit top-level null/empty value means the server removed every effect. Only use the
+  // older nested representation when the top-level field is genuinely absent; `??` would revive
+  // stale nested effects after the last top-level effect was removed.
+  const hasTopLevelEffects = Boolean(combatant)
+    && Object.prototype.hasOwnProperty.call(combatant, 'effects');
+  const source = hasTopLevelEffects ? combatant?.effects : combatant?.data?.effects;
   const effects: unknown[] = Array.isArray(source)
     ? source
     : source && typeof source === 'object'

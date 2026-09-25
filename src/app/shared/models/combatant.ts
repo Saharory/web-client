@@ -16,7 +16,7 @@ export interface Combatant {
 
   data?: any
   attributes?: any
-  effects?: Array<any>
+  effects?: Array<any> | Record<string, any> | null
   modifiers?: Array<any>
 
   rank: number

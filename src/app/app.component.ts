@@ -622,6 +622,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
         // update state
         this.updateGame(this.state.game)
+        // WebSocket callbacks run outside Angular's zoneless render scheduler. The combatant is
+        // intentionally updated in place, so explicitly refresh an already-open player panel.
+        this.cdr.markForCheck()
 
         // changes
         // console.debug(creature)
@@ -717,6 +720,10 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.mapContainer.visionLayer.draw()
           this.mapComponent.mapContainer.lightsLayer.draw()
         }
+
+        // The assigned character can fall back to the combatant embedded in its token. Replacing
+        // that token must therefore refresh the player panel even when no Angular signal changed.
+        this.cdr.markForCheck()
 
         // changes
         // console.debug(model)
