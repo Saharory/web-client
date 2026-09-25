@@ -89,18 +89,20 @@ $mobile-combatant-size: 80px;
 }
 
 .dock-right .initiative-dock-toggle {
-    top: 2.6rem;
+    top: 1.25rem;
     right: 100%;
     border-radius: 0.45rem 0 0 0.45rem;
 }
 
 .dock-bottom .initiative-dock-toggle {
     bottom: 100%;
-    right: 2.6rem;
+    right: 1.25rem;
     border-radius: 0.45rem 0.45rem 0 0;
 }
 
 .initiative-dock-toggle-shape {
+    position: relative;
+    top: 0.28rem;
     width: 1.15rem;
     height: 0.36rem;
     border: 2px solid currentColor;
@@ -108,6 +110,8 @@ $mobile-combatant-size: 80px;
 }
 
 .dock-bottom .initiative-dock-toggle-shape {
+    top: 0;
+    left: 0.28rem;
     width: 0.36rem;
     height: 1.15rem;
 }
