@@ -626,6 +626,23 @@ export class AppComponent implements OnInit, AfterViewInit {
         let combatant = this.state.game.combatants[index]
 
         if (combatant) {
+          // Encounter+ sends a complete combatant model for normal updates, but optional empty
+          // collections can disappear from its JSON. Preserve genuinely partial patches while
+          // treating an omitted effects collection on a complete model as "no active effects".
+          const completeModel = Object.prototype.hasOwnProperty.call(event.data, 'rank')
+          const hasTopLevelEffects = Object.prototype.hasOwnProperty.call(event.data, 'effects')
+          const nestedData = event.data.data
+          const hasNestedEffects = nestedData && typeof nestedData === 'object'
+            && Object.prototype.hasOwnProperty.call(nestedData, 'effects')
+
+          if (completeModel && !hasTopLevelEffects) {
+            if (hasNestedEffects) {
+              delete combatant.effects
+            } else {
+              combatant.effects = null
+            }
+          }
+
           Object.assign(combatant, event.data)
         }
 

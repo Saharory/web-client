@@ -17,6 +17,7 @@ import { WSEvent, WSEventName } from './shared/models/wsevent';
 import { MapLayer } from './shared/models/map';
 import { ControlState } from './core/map/views/token-view';
 import { Role } from './shared/models/token';
+import { playerEffects } from './shared/player-tools';
 import { mapComponentStub, modelViewStub, tileViewStub, tokenViewStub } from './core/map/testing/map-component-stub';
 import {
   minimalAreaEffect,
@@ -202,7 +203,7 @@ describe('AppComponent websocket events', () => {
       expect(app.state.game.combatants).toEqual([]);
     });
 
-    it('refreshes an open player panel when effects change or the final effect is removed', async () => {
+    it('refreshes an open player panel when effects change or the final effect is explicitly removed', () => {
       const initialRevision = app.playerStateRevision();
       app.state.game.combatants = [minimalCombatant({
         id: 'hero-1',
@@ -216,6 +217,32 @@ describe('AppComponent websocket events', () => {
 
       expect(app.state.game.combatants[0].effects).toEqual([]);
       expect(app.playerStateRevision()).toBe(initialRevision + 1);
+    });
+
+    it('clears the final effect when a complete server model omits its empty collection', () => {
+      const initialRevision = app.playerStateRevision();
+      app.state.game.combatants = [minimalCombatant({
+        id: 'hero-1',
+        effects: [{ id: 'frightened', name: 'Frightened' }],
+      })];
+
+      // Swift omits optional empty collections from the encoded update instead of sending `[]`.
+      send(WSEventName.combatantUpdated, minimalCombatant({ id: 'hero-1' }));
+
+      expect(playerEffects(app.state.game.combatants[0])).toEqual([]);
+      expect(app.state.game.combatants[0].effects).toBeNull();
+      expect(app.playerStateRevision()).toBe(initialRevision + 1);
+    });
+
+    it('preserves effects when a genuinely partial update omits that field', () => {
+      app.state.game.combatants = [minimalCombatant({
+        id: 'hero-1',
+        effects: [{ id: 'frightened', name: 'Frightened' }],
+      })];
+
+      send(WSEventName.combatantUpdated, { id: 'hero-1', bloodied: true });
+
+      expect(playerEffects(app.state.game.combatants[0]).map(effect => effect.name)).toEqual(['Frightened']);
     });
   });
 
