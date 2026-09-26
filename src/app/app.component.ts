@@ -233,6 +233,10 @@ export class AppComponent implements OnInit, AfterViewInit {
           }
 
           this.playerColor = Utils.userColor();
+          // Settings mutates the long-lived AppState object when the assigned token changes.
+          // Bump the panel input so an already-open My Character panel renders the new token
+          // immediately instead of waiting for the next click or websocket event.
+          this.refreshPlayerState();
           this.updateTurnNotice();
 
         }, reason => {

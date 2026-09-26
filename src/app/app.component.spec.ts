@@ -85,4 +85,25 @@ describe('AppComponent', () => {
       backdropClass: 'settings-modal-backdrop',
     }));
   });
+
+  it('refreshes an open player panel after settings changes its assigned token', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    const modalService = TestBed.inject(NgbModal);
+    let closeSettings!: (result: string) => void;
+    const result = new Promise<string>(resolve => closeSettings = resolve);
+    spyOn(modalService, 'open').and.returnValue({
+      componentInstance: {},
+      result,
+    } as any);
+    const initialRevision = app.playerStateRevision();
+
+    app.toolbarAction('showSettings');
+    app.state.userTokenId = 'new-token';
+    closeSettings('save');
+    await result;
+    await Promise.resolve();
+
+    expect(app.playerStateRevision()).toBe(initialRevision + 1);
+  });
 });
