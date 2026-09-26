@@ -1,7 +1,7 @@
 {
     "id": "web-client",
     "name": "Encounter+ Community Web Client",
-    "version": "0.9.17.2",
+    "version": "0.9.17.3",
     "description": "community web client for Encounter+ VTT app",
     "authors": [
         {
