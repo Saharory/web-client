@@ -219,19 +219,35 @@ describe('AppComponent websocket events', () => {
       expect(app.playerStateRevision()).toBe(initialRevision + 1);
     });
 
-    it('clears the final effect when a complete server model omits its empty collection', () => {
+    it('replaces stale effects with the authoritative API combatant after an assigned update', () => {
       const initialRevision = app.playerStateRevision();
+      app.state.userTokenId = 'token-1';
+      app.state.map = minimalMap({
+        tokens: [minimalToken({ id: 'token-1', role: Role.friendly })],
+      });
       app.state.game.combatants = [minimalCombatant({
         id: 'hero-1',
+        tokenId: 'token-1',
         effects: [{ id: 'frightened', name: 'Frightened' }],
       })];
 
-      // Swift omits optional empty collections from the encoded update instead of sending `[]`.
-      send(WSEventName.combatantUpdated, minimalCombatant({ id: 'hero-1' }));
+      const service = TestBed.inject(DataService) as any;
+      service.getData.and.returnValue(of(minimalApiData({
+        map: app.state.map,
+        game: {
+          turn: 0,
+          round: 0,
+          started: false,
+          combatants: [minimalCombatant({ id: 'hero-1', tokenId: 'token-1' })],
+        },
+      })));
+
+      // The event itself contains no empty effects value; the API snapshot is authoritative.
+      send(WSEventName.combatantUpdated, { id: 'hero-1', bloodied: true });
 
       expect(playerEffects(app.state.game.combatants[0])).toEqual([]);
-      expect(app.state.game.combatants[0].effects).toBeNull();
-      expect(app.playerStateRevision()).toBe(initialRevision + 1);
+      expect(service.getData).toHaveBeenCalled();
+      expect(app.playerStateRevision()).toBe(initialRevision + 2);
     });
 
     it('preserves effects when a genuinely partial update omits that field', () => {
