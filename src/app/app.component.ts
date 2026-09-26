@@ -201,7 +201,11 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.mapComponent.viewport.pause = true
         }
 
-        let modal = this.modalService.open(SettingsModalComponent, {centered: true})
+        let modal = this.modalService.open(SettingsModalComponent, {
+          centered: true,
+          windowClass: 'settings-modal-layer',
+          backdropClass: 'settings-modal-backdrop',
+        })
         modal.componentInstance.state = this.state
         const playedVideoAssets = Loader.playsVideoAssets
         modal.result.then(result => {

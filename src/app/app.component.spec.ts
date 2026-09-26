@@ -5,6 +5,8 @@ import { AppComponent } from './app.component';
 import { AppState } from './shared/models/app-state';
 import { DataService } from './shared/services/data.service';
 import { WSEvent } from './shared/models/wsevent';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { SettingsModalComponent } from './core/settings-modal/settings-modal.component';
 
 // the real service opens a websocket on init, so the spec runs against a stub
 function dataServiceStub() {
@@ -64,5 +66,23 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     expect(dataService.connect).toHaveBeenCalled();
+  });
+
+  it('opens settings in the dedicated topmost modal layer', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    const modalService = TestBed.inject(NgbModal);
+    const open = spyOn(modalService, 'open').and.returnValue({
+      componentInstance: {},
+      result: new Promise(() => {}),
+    } as any);
+
+    app.toolbarAction('showSettings');
+
+    expect(open).toHaveBeenCalledWith(SettingsModalComponent, jasmine.objectContaining({
+      centered: true,
+      windowClass: 'settings-modal-layer',
+      backdropClass: 'settings-modal-backdrop',
+    }));
   });
 });

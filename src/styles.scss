@@ -198,3 +198,13 @@ code {
 .dark-modal {
     width: 400px;
 }
+
+// Settings controls the entire client, so its backdrop and dialog must cover every floating
+// character, rule, effect, lightbox, and map overlay created underneath it.
+.settings-modal-backdrop {
+    z-index: 20000 !important;
+}
+
+.settings-modal-layer {
+    z-index: 20010 !important;
+}
