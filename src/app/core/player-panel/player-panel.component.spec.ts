@@ -154,4 +154,27 @@ describe('PlayerPanelComponent live rendering', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.effect-section')).toBeNull();
   });
+
+  it("uses the token's live combatant effects instead of a stale game copy", () => {
+    const state = new AppState();
+    state.userTokenId = 'token-1';
+    state.map = {
+      tokens: [minimalToken({
+        id: 'token-1',
+        name: 'Mira',
+        role: Role.friendly,
+        combatant: minimalCombatant({ id: 'hero-1', tokenId: 'token-1', effects: [] }),
+      })],
+    } as any;
+    state.game.combatants = [minimalCombatant({
+      id: 'hero-1',
+      tokenId: 'token-1',
+      effects: [{ id: 'frightened', name: 'Frightened' }],
+    })];
+    component.state = state;
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.effect-section')).toBeNull();
+  });
 });

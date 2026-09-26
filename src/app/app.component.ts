@@ -33,8 +33,8 @@ import { Meta } from '@angular/platform-browser';
 import { Message } from './shared/models/message';
 import { Game, emptyGame } from './shared/models/game';
 import { Screen } from './shared/models/screen';
-import { ActiveCombatant, Role } from './shared/models/combatant';
-import { PlayerEffect, assignedPlayerCombatant, assignedPlayerToken } from './shared/player-tools';
+import { ActiveCombatant, Combatant, Role } from './shared/models/combatant';
+import { PlayerEffect, assignedPlayerCombatant } from './shared/player-tools';
 import { EntityReferenceAction } from './shared/entity-frame-interactions';
 import { InitiativeDockPosition, storedInitiativeDockPosition } from './core/initiative-list/initiative-dock';
 
@@ -142,40 +142,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     // The panel receives one long-lived AppState object. A primitive revision input tells Angular
     // that its mutable contents changed, so zoneless rendering does not wait for user interaction.
     this.playerStateRevision.update(revision => revision + 1)
-  }
-
-  private synchronizeAssignedPlayerFromServer(combatantId?: string, tokenId?: string): void {
-    const assignedToken = assignedPlayerToken(this.state)
-    const assignedCombatant = assignedPlayerCombatant(this.state)
-    if (!assignedToken || !assignedCombatant) return
-    if (combatantId && combatantId !== assignedCombatant.id) return
-    if (tokenId && tokenId !== assignedToken.id) return
-
-    // Empty optional collections are not represented consistently by every Encounter+ websocket
-    // payload. The regular API is the authoritative snapshot and, unlike merging an event patch,
-    // replacing its combatant cannot retain the final removed effect.
-    this.dataService.getData().subscribe((data: ApiData) => {
-      const freshToken = data.map?.tokens?.find(token => token.id === assignedToken.id)
-      const freshCombatant = data.game?.combatants?.find(combatant =>
-        combatant.id === assignedCombatant.id || combatant.tokenId === assignedToken.id
-      ) || freshToken?.combatant
-      if (!freshCombatant) return
-
-      const index = this.state.game.combatants.findIndex(combatant => combatant.id === assignedCombatant.id)
-      if (index >= 0) {
-        this.state.game.combatants[index] = freshCombatant
-      } else {
-        this.state.game.combatants.push(freshCombatant)
-      }
-
-      const currentToken = this.state.map?.tokens?.find(token => token.id === assignedToken.id)
-      if (currentToken && freshToken) currentToken.combatant = freshToken.combatant
-
-      this.updateGame(this.state.game)
-      this.refreshPlayerState()
-    }, () => {
-      // Keep the websocket update if this best-effort reconciliation request fails.
-    })
   }
 
   @ViewChild(MapComponent)
@@ -514,7 +480,6 @@ export class AppComponent implements OnInit, AfterViewInit {
         }
 
         this.refreshPlayerState()
-        this.synchronizeAssignedPlayerFromServer()
 
         break;
       }
@@ -664,10 +629,17 @@ export class AppComponent implements OnInit, AfterViewInit {
           Object.assign(combatant, event.data)
         }
 
+        // The current Encounter+ data model keeps another combatant copy inside its token.
+        // Status effects are sourced from that copy, so both objects must receive the update.
+        const tokenId = event.data.tokenId ?? combatant?.tokenId
+        const token = tokenId ? this.state.map?.tokens.find(token => token.id === tokenId) : undefined
+        if (token) {
+          token.combatant = Object.assign(token.combatant ?? {}, event.data) as Combatant
+        }
+
         // update state
         this.updateGame(this.state.game)
         this.refreshPlayerState()
-        this.synchronizeAssignedPlayerFromServer(event.data.id)
 
         // changes
         // console.debug(creature)
@@ -736,7 +708,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       case WSEventName.tokenUpdated: {
         let model = { ...event.data } as Token
-        const assignedTokenId = assignedPlayerToken(this.state)?.id
 
         // udpdate state
         const map = this.state.map
@@ -767,7 +738,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
         // The assigned character can fall back to the combatant embedded in its token.
         this.refreshPlayerState()
-        if (model.id === assignedTokenId) this.synchronizeAssignedPlayerFromServer(undefined, model.id)
 
         // changes
         // console.debug(model)
@@ -999,7 +969,6 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.mapComponent.mapContainer.visionLayer.draw()
         this.mapComponent.mapContainer.lightsLayer.draw()
         this.refreshPlayerState()
-        this.synchronizeAssignedPlayerFromServer()
         break;
       }
 

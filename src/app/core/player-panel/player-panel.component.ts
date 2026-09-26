@@ -59,7 +59,8 @@ export class PlayerPanelComponent implements OnInit, DoCheck {
   }
 
   get activeEffects(): PlayerEffect[] {
-    return playerEffects(this.combatant);
+    // Encounter+ keeps the live status-effect collection on the token's combatant copy.
+    return playerEffects(this.token?.combatant ?? this.combatant);
   }
 
   get canSetInitiative(): boolean {
