@@ -19,10 +19,14 @@ module.exports = function (config) {
         { type: 'text-summary' }
       ]
     },
-    reporters: ['progress'],
+    reporters: ['dots'],
+    browserConsoleLogOptions: {
+      level: 'error',
+      terminal: true
+    },
     port: 9876,
-    colors: true,
-    logLevel: config.LOG_INFO,
+    colors: false,
+    logLevel: config.LOG_WARN,
     autoWatch: true,
     browsers: ['ChromeHeadless'],
     singleRun: false,
