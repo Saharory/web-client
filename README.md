@@ -139,8 +139,8 @@ To rebuild an existing release, run the Release workflow manually with its tag. 
 ## Tests
 
 ```
-npm test               # Karma in watch mode
-npm run test:ci        # single run
+npm run verify         # canonical unit-test + production-build check
+npm test               # optional Karma watch mode while editing
 ```
 
 Specs sit next to the code they cover (`*.spec.ts`). `core/map/testing/` and `shared/models/testing/` hold stubs and fixtures.
