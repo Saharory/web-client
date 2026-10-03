@@ -4,8 +4,8 @@
 //   node scripts/sync-version.mjs --check     fail unless both versions agree
 //   node scripts/sync-version.mjs --check TAG fail unless both versions agree with TAG
 //
-// The plain form runs from the npm "version" lifecycle hook, so `npm version <x>` bumps both
-// files in one commit. The --check form guards the release workflow.
+// Community releases use one-dot numeric versions such as 0.9 and 0.901.
+// The --check form guards both that format and the release workflow.
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -14,10 +14,15 @@ const manifestURL = new URL('../src/manifest.json', import.meta.url)
 
 const packageVersion = JSON.parse(readFileSync(packageURL, 'utf8')).version
 const manifest = JSON.parse(readFileSync(manifestURL, 'utf8'))
+const projectVersion = /^\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/
 
 const [mode, tag] = process.argv.slice(2)
 
 if (mode === '--check') {
+  if (!projectVersion.test(packageVersion)) {
+    console.error(`Invalid community version ${packageVersion}; expected 0.9 or 0.901 style numbering`)
+    process.exit(1)
+  }
   const versions = { 'package.json': packageVersion, 'src/manifest.json': manifest.version }
   if (tag !== undefined) {
     versions['tag'] = tag.replace(/^v/, '')
