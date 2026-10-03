@@ -1,9 +1,9 @@
 # Current status
 
-Last updated: 2026-10-04
+Last updated: 2026-09-29
 
 - Branch: `develop`
-- Package version: `0.9` (release not yet published)
+- Package version: `0.9.17.3`
 - Latest published community baseline: Angular 22/TypeScript 6 upstream
   compatibility plus player ruler and area previews, assigned-character effects
   and rolls, independent floating references, and right/bottom initiative dock.
