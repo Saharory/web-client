@@ -53,6 +53,7 @@ export function playerEffects(combatant?: Combatant): PlayerEffect[] {
     if (!effect || typeof effect !== 'object') return [];
 
     const record = effect as Record<string, any>;
+    if (record['enabled'] === false) return [];
     const data = record['data'] && typeof record['data'] === 'object' ? record['data'] : {};
     const name = textValue(record['name'], record['label'], record['title'], data['name']);
     if (!name) return [];

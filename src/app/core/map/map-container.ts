@@ -227,6 +227,13 @@ export class MapContainer extends Layer {
     this.grid.update(this.map)
     this.gridLayer.update(this.grid)
 
+    for (const view of [...this.savedMeasurementViews, this.localMeasurementView]) {
+      if (view) {
+        view.grid = this.grid
+        view.draw()
+      }
+    }
+
     if (this.localAreaTemplateView) {
       this.localAreaTemplateView.grid = this.grid
       this.localAreaTemplateView.maximumWidth = this.w

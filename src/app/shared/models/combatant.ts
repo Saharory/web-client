@@ -1,4 +1,5 @@
 import { Initiative } from "./initiative"
+import { StatusEffect } from "./status-effect"
 
 export enum Role {
   friendly = "friendly",
@@ -16,11 +17,10 @@ export interface Combatant {
 
   data?: any
   attributes?: any
-  effects?: Array<any> | Record<string, any> | null
-  modifiers?: Array<any>
 
   rank: number
   initiative?: Array<Initiative>
+  effects?: Array<StatusEffect> | null
 
   bloodied?: boolean
   defeated?: boolean

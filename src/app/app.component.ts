@@ -76,7 +76,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   referenceWindow?: EntityWindowState;
   characterWindowZ = 1060;
   referenceWindowZ = 1061;
-  private floatingWindowZ = 1061;
 
   readonly turnNotice = signal<TurnNoticeState | undefined>(undefined);
   readonly playerStateRevision = signal(0);
@@ -372,9 +371,13 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   focusFloatingWindow(window: 'character' | 'reference') {
-    this.floatingWindowZ += 1;
-    if (window === 'character') this.characterWindowZ = this.floatingWindowZ;
-    else this.referenceWindowZ = this.floatingWindowZ;
+    if (window === 'character') {
+      this.characterWindowZ = 1061;
+      this.referenceWindowZ = 1060;
+    } else {
+      this.characterWindowZ = 1060;
+      this.referenceWindowZ = 1061;
+    }
   }
 
   dismissTurnNotice() {
@@ -637,12 +640,18 @@ export class AppComponent implements OnInit, AfterViewInit {
           Object.assign(combatant, event.data)
         }
 
-        // The current Encounter+ data model keeps another combatant copy inside its token.
-        // Status effects are sourced from that copy, so both objects must receive the update.
+        // Keep model state current even when no token view is mounted.
         const tokenId = event.data.tokenId ?? combatant?.tokenId
         const token = tokenId ? this.state.map?.tokens.find(token => token.id === tokenId) : undefined
         if (token) {
           token.combatant = Object.assign(token.combatant ?? {}, event.data) as Combatant
+        }
+
+        // The rendered token may hold its own combatant copy.
+        const tokenView = tokenId ? this.mapComponent?.mapContainer.tokenViewById(tokenId) : null
+        if (tokenView != null) {
+          tokenView.token.combatant = Object.assign(tokenView.token.combatant ?? {}, event.data)
+          tokenView.updateEffects()
         }
 
         // update state

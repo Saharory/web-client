@@ -112,8 +112,7 @@ describe('player tools', () => {
           reference: '/condition/frightened-player-core',
           data: { stage: 2 },
         },
-        { name: 'Persistent Fire', data: { damage: { formula: '1d6' } }, descr: 'Ongoing fire damage.' },
-        null,
+        { id: 'persistent-fire', name: 'Persistent Fire', data: { damage: { formula: '1d6' } }, descr: 'Ongoing fire damage.' },
       ],
     });
 
@@ -138,6 +137,14 @@ describe('player tools', () => {
       data: { effects: { hidden: { label: 'Invisible' } } },
     });
     expect(playerEffects(combatant).map(effect => effect.name)).toEqual(['Invisible']);
+  });
+
+  it('excludes disabled effects consistently with token rendering', () => {
+    const combatant = minimalCombatant({ effects: [
+      { id: 'active', name: 'Active' },
+      { id: 'disabled', name: 'Disabled', enabled: false },
+    ] });
+    expect(playerEffects(combatant).map(effect => effect.name)).toEqual(['Active']);
   });
 
   it('does not revive nested effects after the server explicitly clears the top-level field', () => {

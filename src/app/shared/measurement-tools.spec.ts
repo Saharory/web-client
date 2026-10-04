@@ -1,4 +1,7 @@
 import { alternatingDiagonalMovement, formatMeasurementDistance, measurementDistance } from './measurement-tools';
+import { MeasurementView } from '../core/map/views/measurement-view';
+import { SquareGrid } from '../core/map/models/square-grid';
+import { minimalMeasurement } from './models/testing/fixtures';
 
 describe('measurement tools', () => {
   it('converts a precise pixel distance using the map grid scale', () => {
@@ -17,6 +20,18 @@ describe('measurement tools', () => {
   it('handles incomplete measurements safely', () => {
     expect(measurementDistance([0, 0], 10)).toBe(0);
     expect(measurementDistance([0, 0, 10, 10], 0)).toBe(0);
+  });
+
+  it('refreshes rendered distances when the map grid is replaced', async () => {
+    const view = new MeasurementView(minimalMeasurement({ data: [0, 0, 100, 0] }), new SquareGrid());
+    await view.draw();
+    expect(view.distanceText.text).toBe('10 ft');
+    const grid = new SquareGrid();
+    grid.scale = 10;
+    view.grid = grid;
+    await view.draw();
+    expect(view.distanceText.text).toBe('20 ft');
+    view.destroy({ children: true });
   });
 
   it('uses alternating 5-foot and 10-foot diagonal movement', () => {

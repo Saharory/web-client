@@ -36,8 +36,14 @@ export class LocalAreaTemplateView extends AreaEffectView {
   }
 
   override async draw() {
+    if (this.destroyed) return this;
     this.selected = this.editing;
-    await super.draw();
+    this.clear();
+    this.update();
+    // Local previews have no assets to load. Drawing synchronously prevents a cleared
+    // preview from reattaching graphics after a pending inherited draw resumes.
+    void this.drawShape();
+    void this.drawHandles();
 
     this.affectedCells.clear();
     this.distanceText.text = '';
@@ -51,6 +57,12 @@ export class LocalAreaTemplateView extends AreaEffectView {
     this.addChildAt(this.affectedCells, 0);
     this.addChild(this.distanceText);
     return this;
+  }
+
+  override clear() {
+    this.shapeGraphics?.destroy();
+    this.handlesGraphics?.destroy();
+    super.clear();
   }
 
   private drawAffectedCells() {

@@ -13,7 +13,7 @@ export class MeasurementView extends View {
     deleteControl: PIXI.Container
     private deleteHandler: (() => void) | null = null
 
-    constructor(public measurement: Measurement, private grid: Grid) {
+    constructor(public measurement: Measurement, public grid: Grid) {
         super()
 
         this.cells = new PIXI.Graphics()

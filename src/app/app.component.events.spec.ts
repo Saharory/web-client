@@ -23,6 +23,7 @@ import {
   minimalAreaEffect,
   minimalApiData,
   minimalCombatant,
+  minimalStatusEffect,
   minimalDrawing,
   minimalLight,
   minimalMap,
@@ -196,6 +197,17 @@ describe('AppComponent websocket events', () => {
       send(WSEventName.combatantUpdated, { id: "a", bloodied: true });
       expect(app.state.game.combatants[0].name).toBe("Goblin");
       expect(app.state.game.combatants[0].bloodied).toBe(true);
+    });
+
+    it("merges into the token's copy and redraws its status effects", () => {
+      const view = tokenViewStub(minimalToken({ id: "t1", combatant: minimalCombatant({ id: "a", name: "Goblin" }) }));
+      container.tokenViewById.and.returnValue(view as any);
+      app.state.game.combatants = [minimalCombatant({ id: "a", tokenId: "t1" })];
+      send(WSEventName.combatantUpdated, { id: "a", effects: [minimalStatusEffect({ icon: "gi-poison" })] });
+      expect(container.tokenViewById).toHaveBeenCalledWith("t1");
+      expect(view.token.combatant!.name).toBe("Goblin");
+      expect(view.token.combatant!.effects!.length).toBe(1);
+      expect(view.updateEffects).toHaveBeenCalled();
     });
 
     it('ignores an unknown combatant', () => {

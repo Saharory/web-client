@@ -86,6 +86,19 @@ describe('AppComponent', () => {
     }));
   });
 
+  it('keeps repeated floating-window focus within its reserved layer', () => {
+    const app = TestBed.createComponent(AppComponent).componentInstance;
+    for (let index = 0; index < 100; index++) {
+      app.focusFloatingWindow('character');
+      app.focusFloatingWindow('reference');
+    }
+    expect(app.referenceWindowZ).toBe(1061);
+    expect(app.characterWindowZ).toBe(1060);
+    app.focusFloatingWindow('character');
+    expect(app.characterWindowZ).toBe(1061);
+    expect(app.referenceWindowZ).toBe(1060);
+  });
+
   it('refreshes an open player panel after settings changes its assigned token', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;

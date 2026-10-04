@@ -48,6 +48,8 @@ export class EntityModalComponent implements OnChanges {
   }
 
   frameLoaded(frame: HTMLIFrameElement): void {
+    // Cross-origin frames can be displayed even when their document is inaccessible.
+    this.frameLoading = false;
     try {
       const frameDocument = frame.contentDocument;
       if (!frameDocument) return;

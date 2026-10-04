@@ -14,6 +14,7 @@ import { RunMode } from 'src/app/shared/models/app-state';
 import { PathView } from './path-view';
 import { Asset, AssetLayout } from 'src/app/shared/models/asset';
 import { AssetArtwork } from './asset-artwork';
+import { StatusEffectsView } from './status-effects-view';
 
 function clamp(num: number, min: number, max: number) {
   return num <= min ? min : num >= max ? max : num
@@ -50,6 +51,9 @@ export class TokenView extends View {
   elevationText: PIXI.Text | null = null
 
   distanceText: PIXI.Text | null = null
+
+  /** The combatant's status effects, over the token's top-left; kept across redraws so unchanged icons are not rebuilt. */
+  effectsView: StatusEffectsView = new StatusEffectsView()
 
   dragging: boolean = false
   dragStart: number = Date.now()
@@ -334,6 +338,11 @@ export class TokenView extends View {
 
     this.updateOverlay()
 
+    // status effects, above the artwork and overlay, below the elevation and label
+    this.effectsView.zIndex = 2
+    this.addChild(this.effectsView)
+    this.updateEffects()
+
     // elevation graphics
     this.elevationGraphics = new PIXI.Graphics();
     this.elevationGraphics.zIndex = 3
@@ -416,6 +425,12 @@ export class TokenView extends View {
     }
   }
 
+  /** Redraws the status effects, which skips the work when they have not changed. */
+  updateEffects() {
+    this.effectsView.visible = !this.defeated
+    this.effectsView.draw(this.token.combatant?.effects, this.w, this.h)
+  }
+
   updateLabel() {
     const labelGraphics = this.labelGraphics
     const labelText = this.labelText
@@ -437,6 +452,7 @@ export class TokenView extends View {
     const text = this.token.label || this.trackingLabel || (this.token.name || "Unknown").toUpperCase().charAt(0)
 
     if (this.hasArtwork || (this.token.trackingId != null && this.dataService.state.runMode != RunMode.normal)) {
+      labelGraphics.zIndex = 5
       let size = Math.min(this.w, this.h) * clamp(this.scaleFactor, 0.1, 1.0)
       let labelSize = this.grid.adjustedSize.width * 0.4
 
@@ -471,6 +487,8 @@ export class TokenView extends View {
       labelText.style.fontSize = labelSize / 2.5;
 
     } else {
+      // Without artwork this graphic is the token body, beneath its overlays and effects.
+      labelGraphics.zIndex = 0
       let size = Math.min(this.w, this.h) * this.scaleFactor
       labelGraphics.clear();
       labelGraphics.circle(this.w / 2, this.h / 2, size / 2)
@@ -630,6 +648,7 @@ export class TokenView extends View {
   dispose() {
     this.disposeAuras()
     this.clear()
+    this.effectsView.destroy({ children: true })
   }
 
   onTap(event: any) {

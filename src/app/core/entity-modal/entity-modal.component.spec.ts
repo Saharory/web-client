@@ -36,4 +36,12 @@ describe('EntityModalComponent', () => {
   it('should build the entity url from the reference', () => {
     expect(component.url).toBe('http://localhost:8080/monster/goblin');
   });
+
+  it('removes the loading overlay when a cross-origin document is inaccessible', () => {
+    const frame = document.createElement('iframe');
+    spyOnProperty(frame, 'contentDocument', 'get').and.returnValue(null);
+    component.frameLoading = true;
+    component.frameLoaded(frame);
+    expect(component.frameLoading).toBeFalse();
+  });
 });
